@@ -88,6 +88,9 @@ export function App() {
         case 'save-invoice':
           handle.save();
           break;
+        case 'save-and-print':
+          handle.saveAndPrint();
+          break;
         case 'preview-invoice':
           handle.preview();
           break;
@@ -133,8 +136,9 @@ export function App() {
 
       if (event.key === 'Enter') {
         event.preventDefault();
-        runAction('save-invoice');
-        runAction('print-invoice');
+        // One action, not save-then-print: firing both independently let print
+        // re-enter save before the first had returned an invoice number.
+        runAction('save-and-print');
         return;
       }
 

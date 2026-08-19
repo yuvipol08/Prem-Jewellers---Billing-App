@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-const calc = await import('../dist-electron/shared/calc.js');
+const calc = await import('../../dist-electron/shared/calc.js');
 const {
   computeInvoice,
   computeItem,

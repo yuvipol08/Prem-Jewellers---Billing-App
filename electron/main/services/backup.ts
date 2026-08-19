@@ -6,13 +6,21 @@ import { EMERGENCY_CONFIRMATION_PHRASE } from '../../../shared/api';
 import type { BackupManifest, CloudStatus } from '../../../shared/types';
 import {
   clearLocalData,
+  countInvoicesChangedSince,
   createSnapshot,
   restoreSnapshot,
   type RestoreCounts,
   type Snapshot,
 } from '../db/snapshot';
 import { getSettings, getSyncValue, setSyncValue } from '../db/settings';
-import { checksum, getRecord, isCloudConfigured, listRecords, putRecord } from './cloud';
+import {
+  checksum,
+  getArchive,
+  isCloudConfigured,
+  listRecords,
+  putArchive,
+  putRecord,
+} from './cloud';
 
 const LAST_CLOUD_BACKUP = 'last_cloud_backup_at';
 const LAST_CLOUD_SYNC = 'last_cloud_sync_at';
@@ -100,17 +108,16 @@ export async function chooseBackupFolder(parent: BrowserWindow | null): Promise<
 
 export function cloudStatus(): CloudStatus {
   const { firebase } = getSettings();
-  const snapshotCounts = createSnapshot(false);
   const lastBackupAt = getSyncValue(LAST_CLOUD_BACKUP);
 
   return {
     configured: isCloudConfigured(firebase),
     lastBackupAt,
     lastSyncAt: getSyncValue(LAST_CLOUD_SYNC),
+    // A COUNT, not a snapshot: this runs every time the Settings screen opens,
+    // and loading every invoice with its line items made that O(n) in disk reads.
     // Everything counts as pending until a backup has run at least once.
-    pendingChanges: lastBackupAt
-      ? snapshotCounts.invoices.filter((invoice) => (invoice.updatedAt ?? '') > lastBackupAt).length
-      : snapshotCounts.invoices.length,
+    pendingChanges: countInvoicesChangedSince(lastBackupAt),
   };
 }
 
@@ -198,8 +205,9 @@ export async function emergencyBackupAndClear(confirmation: string): Promise<Eme
   const archiveId = `emergency-${new Date().toISOString().replace(/[:.]/g, '-')}`;
   const expected = checksum(snapshot);
 
-  // 1. Upload the complete archive plus per-record copies.
-  await putRecord(firebase, 'archives', archiveId, snapshot);
+  // 1. Upload the complete archive (chunked, so size is not a limit) plus
+  //    per-record copies for ordinary browsing and restore.
+  await putArchive(firebase, archiveId, snapshot);
   for (const customer of snapshot.customers) {
     await putRecord(firebase, 'customers', String(customer.id ?? customer.mobile), customer);
   }
@@ -207,9 +215,9 @@ export async function emergencyBackupAndClear(confirmation: string): Promise<Eme
     await putRecord(firebase, 'invoices', invoice.invoiceNo, invoice);
   }
 
-  // 2. Verify by reading the archive back and comparing checksums.
-  const readBack = await getRecord(firebase, 'archives', archiveId);
-  const verified = Boolean(readBack && checksum(readBack.payload) === expected);
+  // 2. Verify by reading every chunk back, reassembling, and comparing checksums.
+  const readBack = await getArchive(firebase, archiveId);
+  const verified = Boolean(readBack && checksum(readBack) === expected);
   if (!verified) {
     throw new Error(
       'Upload could not be verified against the cloud copy. Nothing was deleted from this device.',

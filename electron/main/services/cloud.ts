@@ -118,6 +118,13 @@ async function firestoreRequest(
   return text ? (JSON.parse(text) as Record<string, unknown>) : {};
 }
 
+/**
+ * Firestore caps a document at 1 MiB. Archives are split well under that so the
+ * emergency backup keeps working as the shop's history grows — at roughly 670
+ * bytes per invoice a single document would have failed at about 1,500 bills.
+ */
+export const ARCHIVE_CHUNK_BYTES = 600_000;
+
 export interface CloudRecord {
   id: string;
   payload: unknown;
@@ -212,6 +219,80 @@ export async function listRecords(
   } while (pageToken);
 
   return records;
+}
+
+export interface ArchiveManifest {
+  archiveId: string;
+  parts: number;
+  checksum: string;
+  createdAt: string;
+}
+
+/**
+ * Uploads a payload of any size as a numbered set of chunk documents plus a
+ * manifest naming them. Splitting on the serialised string (not on records)
+ * means one enormous invoice can never straddle the limit unnoticed.
+ */
+export async function putArchive(
+  settings: FirebaseSettings,
+  archiveId: string,
+  payload: unknown,
+): Promise<ArchiveManifest> {
+  const serialised = JSON.stringify(payload);
+  const parts: string[] = [];
+  for (let offset = 0; offset < serialised.length; offset += ARCHIVE_CHUNK_BYTES) {
+    parts.push(serialised.slice(offset, offset + ARCHIVE_CHUNK_BYTES));
+  }
+  // An empty payload still needs one part, so the manifest is never zero-length.
+  if (parts.length === 0) parts.push('');
+
+  for (let index = 0; index < parts.length; index += 1) {
+    await putRecord(settings, 'archives', `${archiveId}__part${index}`, {
+      archiveId,
+      index,
+      total: parts.length,
+      chunk: parts[index],
+    });
+  }
+
+  const manifest: ArchiveManifest = {
+    archiveId,
+    parts: parts.length,
+    checksum: checksum(payload),
+    createdAt: new Date().toISOString(),
+  };
+
+  // The manifest is written last, so a half-uploaded archive is never claimed
+  // as complete by a later restore.
+  await putRecord(settings, 'archives', archiveId, manifest);
+  return manifest;
+}
+
+/** Reads every chunk back and reassembles the original payload, or null if incomplete. */
+export async function getArchive(
+  settings: FirebaseSettings,
+  archiveId: string,
+): Promise<unknown | null> {
+  const manifestRecord = await getRecord(settings, 'archives', archiveId);
+  if (!manifestRecord) return null;
+
+  const manifest = manifestRecord.payload as ArchiveManifest;
+  if (!manifest || typeof manifest.parts !== 'number') return null;
+
+  let serialised = '';
+  for (let index = 0; index < manifest.parts; index += 1) {
+    const part = await getRecord(settings, 'archives', `${archiveId}__part${index}`);
+    if (!part) return null;
+    const chunk = (part.payload as { chunk?: string }).chunk;
+    if (typeof chunk !== 'string') return null;
+    serialised += chunk;
+  }
+
+  try {
+    return JSON.parse(serialised);
+  } catch {
+    return null;
+  }
 }
 
 /** Verifies credentials and write access without touching real data. */

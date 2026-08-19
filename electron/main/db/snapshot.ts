@@ -1,3 +1,4 @@
+import { DEFAULT_SETTINGS } from '../../../shared/defaults';
 import type { AppSettings, Customer, Invoice } from '../../../shared/types';
 import { getDb } from './connection';
 import { listCustomers, saveCustomer } from './customers';
@@ -15,7 +16,22 @@ export interface Snapshot {
   settings: AppSettings;
 }
 
-/** Reads every record out of the local store. Used by every backup path. */
+/** Strips every secret out of a settings object before it can leave the device. */
+function withoutCredentials(settings: AppSettings): AppSettings {
+  return {
+    ...settings,
+    firebase: { ...settings.firebase, password: '' },
+    whatsapp: { ...settings.whatsapp, accessToken: '' },
+  };
+}
+
+/**
+ * Reads every record out of the local store. Used by every backup path.
+ *
+ * Settings are ALWAYS stripped of credentials — a snapshot is something that
+ * gets written to a file or uploaded, so it must never be able to carry the
+ * Firebase password or the WhatsApp token, whatever the caller asks for.
+ */
 export function createSnapshot(includeSettings = true): Snapshot {
   const settings = getSettings();
   const customers = listCustomers('', 1_000_000);
@@ -30,15 +46,20 @@ export function createSnapshot(includeSettings = true): Snapshot {
     shopName: settings.shop.shopName,
     customers,
     invoices,
-    settings: includeSettings
-      ? // Credentials never travel inside a portable backup file.
-        {
-          ...settings,
-          firebase: { ...settings.firebase, password: '' },
-          whatsapp: { ...settings.whatsapp, accessToken: '' },
-        }
-      : settings,
+    settings: withoutCredentials(includeSettings ? settings : DEFAULT_SETTINGS),
   };
+}
+
+/** Counts invoices touched since a timestamp, without loading a single row of data. */
+export function countInvoicesChangedSince(isoTimestamp: string | null): number {
+  const db = getDb();
+  if (!isoTimestamp) {
+    return (db.prepare(`SELECT COUNT(*) AS c FROM invoices`).get() as { c: number }).c;
+  }
+  const row = db
+    .prepare<[string]>(`SELECT COUNT(*) AS c FROM invoices WHERE updated_at > ?`)
+    .get(isoTimestamp) as { c: number };
+  return row.c;
 }
 
 export interface RestoreCounts {
@@ -114,15 +135,28 @@ export function restoreSnapshot(snapshot: Snapshot, options: { settings?: boolea
 }
 
 /**
- * Removes every business record from this device.
+ * Removes every business record from this device, unrecoverably.
  *
- * VACUUM is the point of this function: DELETE alone leaves the old rows sitting
- * in free pages where they can still be carved out of the file. Vacuuming
- * rewrites the database without them. Shop settings survive so the app is
- * immediately usable again.
+ * A plain DELETE only marks pages free — the old rows stay legible in the file
+ * and can be carved straight back out of it, which would defeat the whole point
+ * of the emergency wipe. The order here was established by testing the raw
+ * database bytes after each step:
+ *
+ *   1. secure_delete zeroes page content as it is released, rather than just
+ *      unlinking it.
+ *   2. The deletes run in one transaction so a crash cannot half-clear the books.
+ *   3. VACUUM rebuilds the file so freed pages are gone and the file shrinks.
+ *   4. The final checkpoint is essential: under WAL the VACUUM's output lands in
+ *      the write-ahead log, so without folding it back and truncating, the old
+ *      content survives in the -wal file. Checkpointing only before the VACUUM
+ *      (the obvious order) leaves the data readable.
+ *
+ * Shop settings survive so the app is immediately usable again.
  */
 export function clearLocalData(): void {
   const db = getDb();
+
+  db.pragma('secure_delete = ON');
 
   const wipe = db.transaction(() => {
     db.prepare(`DELETE FROM invoice_items`).run();
@@ -136,4 +170,5 @@ export function clearLocalData(): void {
 
   db.pragma('wal_checkpoint(TRUNCATE)');
   db.exec('VACUUM');
+  db.pragma('wal_checkpoint(TRUNCATE)');
 }

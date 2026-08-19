@@ -1,5 +1,12 @@
 import { computeInvoice } from '../../../shared/calc';
 import { todayIso } from '../../../shared/defaults';
+import {
+  escapeLikePattern,
+  financialYearLabel,
+  formatInvoiceNo,
+  sequenceFromInvoiceNo,
+  seriesPrefix,
+} from '../../../shared/numbering';
 import type {
   Invoice,
   InvoiceFilter,
@@ -11,21 +18,12 @@ import type {
 import { getDb } from './connection';
 import { getSettings } from './settings';
 
-/** Indian financial year label for a date: 2025-06-01 -> "25-26". */
-export function financialYearLabel(isoDate: string): string {
-  const date = new Date(`${isoDate}T00:00:00`);
-  const valid = Number.isNaN(date.getTime()) ? new Date() : date;
-  const year = valid.getFullYear();
-  const startYear = valid.getMonth() >= 3 ? year : year - 1; // FY starts in April
-  const short = (value: number) => String(value % 100).padStart(2, '0');
-  return `${short(startYear)}-${short(startYear + 1)}`;
-}
+export { financialYearLabel };
 
 /** The constant part of an invoice number, e.g. "PJ/25-26/" or "PJ-". */
 export function invoiceSeriesPrefix(isoDate = todayIso()): string {
   const { shop } = getSettings();
-  const prefix = (shop.invoicePrefix || 'PJ').trim();
-  return shop.resetNumberYearly ? `${prefix}/${financialYearLabel(isoDate)}/` : `${prefix}-`;
+  return seriesPrefix(shop.invoicePrefix, shop.resetNumberYearly, isoDate);
 }
 
 /**
@@ -33,6 +31,8 @@ export function invoiceSeriesPrefix(isoDate = todayIso()): string {
  *
  * Derived from what is actually stored rather than a counter, so restoring a
  * backup or clearing the device can never hand out a number that already exists.
+ * The prefix is escaped before it reaches LIKE — a prefix containing "_" or "%"
+ * would otherwise act as a wildcard and scan the wrong series.
  */
 export function nextInvoiceNumber(isoDate = todayIso()): string {
   const db = getDb();
@@ -40,18 +40,18 @@ export function nextInvoiceNumber(isoDate = todayIso()): string {
   const prefix = invoiceSeriesPrefix(isoDate);
 
   const rows = db
-    .prepare<[string]>(`SELECT invoice_no FROM invoices WHERE invoice_no LIKE ? || '%'`)
-    .all(prefix) as { invoice_no: string }[];
+    .prepare<[string]>(
+      `SELECT invoice_no FROM invoices WHERE invoice_no LIKE ? || '%' ESCAPE '\\'`,
+    )
+    .all(escapeLikePattern(prefix)) as { invoice_no: string }[];
 
   let highest = 0;
   for (const row of rows) {
-    const suffix = row.invoice_no.slice(prefix.length);
-    const parsed = Number.parseInt(suffix, 10);
-    if (Number.isFinite(parsed) && parsed > highest) highest = parsed;
+    const sequence = sequenceFromInvoiceNo(row.invoice_no, prefix);
+    if (sequence !== null && sequence > highest) highest = sequence;
   }
 
-  const next = Math.max(highest + 1, shop.invoiceStartNumber || 1);
-  return `${prefix}${String(next).padStart(4, '0')}`;
+  return formatInvoiceNo(prefix, Math.max(highest + 1, shop.invoiceStartNumber || 1));
 }
 
 interface InvoiceRow {
@@ -161,6 +161,15 @@ export function saveInvoice(invoice: Invoice): { id: number; invoiceNo: string }
     let invoiceNo = invoice.invoiceNo.trim() || nextInvoiceNumber(invoice.invoiceDate);
 
     if (invoiceId) {
+      // Editing onto a number another bill already holds would otherwise surface
+      // a raw "UNIQUE constraint failed" from SQLite at the counter.
+      const clash = getInvoiceByNumber(invoiceNo);
+      if (clash && clash.id !== invoiceId) {
+        throw new Error(
+          `Invoice number ${invoiceNo} is already used by another bill. Choose a different number.`,
+        );
+      }
+
       db.prepare(
         `UPDATE invoices SET
            invoice_no = ?, invoice_date = ?, customer_id = ?, customer_name = ?,
