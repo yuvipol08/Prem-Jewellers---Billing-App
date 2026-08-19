@@ -1,0 +1,101 @@
+/*
+ * Prem Jewellers design tokens.
+ *
+ * White paper, deep jeweller's red, a little antique gold. Every surface and
+ * border is a token so dark mode is a token swap rather than a second stylesheet.
+ */
+
+:root {
+  --red-900: #6d1414;
+  --red-700: #8c1a1a;
+  --red-600: #9b1b1b;
+  --red-500: #b62525;
+  --red-100: #f7e9e9;
+  --red-050: #fdf6f6;
+
+  /* Filled brand surfaces (buttons, the grand-total banner, the logo mark) keep
+     these exact values in both themes — inverting them washes the red out. */
+  --brand: #9b1b1b;
+  --brand-deep: #6d1414;
+  --brand-hover: #b62525;
+  --on-brand: #ffffff;
+
+  --gold-600: #9a7b2f;
+  --gold-400: #c8a44a;
+  --gold-100: #f6efdc;
+
+  --ink-900: #1a1613;
+  --ink-700: #3b3733;
+  --ink-500: #6b6560;
+  --ink-400: #8d8781;
+  --ink-300: #b6b0aa;
+
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #faf8f6;
+  --surface-header: #ffffff;
+  --border: #e7e1db;
+  --border-strong: #d5cdc5;
+
+  --success: #1f7a45;
+  --success-bg: #e8f5ee;
+  --warning: #9a6410;
+  --warning-bg: #fdf3e2;
+  --danger: #b3261e;
+  --danger-bg: #fdecea;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  --shadow-sm: 0 1px 2px rgba(26, 22, 19, 0.06);
+  --shadow: 0 2px 8px rgba(26, 22, 19, 0.08);
+  --shadow-lg: 0 12px 32px rgba(26, 22, 19, 0.16);
+
+  --font: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-num: "SF Mono", "Cascadia Mono", Consolas, "Roboto Mono", monospace;
+
+  --header-height: 58px;
+  --nav-height: 46px;
+}
+
+:root[data-theme='dark'] {
+  --red-900: #f0b8b8;
+  --red-700: #e88b8b;
+  --red-600: #dd6a6a;
+  --red-500: #c95151;
+  --red-100: #3a1d1d;
+  --red-050: #2a1717;
+
+  --gold-600: #d9bd6f;
+  --gold-400: #c8a44a;
+  --gold-100: #3a3220;
+
+  --ink-900: #f2ede8;
+  --ink-700: #d9d2cb;
+  --ink-500: #a49d96;
+  --ink-400: #857e78;
+  --ink-300: #625b55;
+
+  --surface: #191513;
+  --surface-raised: #221d1a;
+  --surface-sunken: #141110;
+  --surface-header: #221d1a;
+  --border: #342d29;
+  --border-strong: #453c37;
+
+  --success: #6ed49b;
+  --success-bg: #16301f;
+  --warning: #e0b25f;
+  --warning-bg: #322512;
+  --danger: #f08a83;
+  --danger-bg: #341a18;
+
+  --brand: #a82424;
+  --brand-deep: #7d1818;
+  --brand-hover: #c03030;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+}

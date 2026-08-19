@@ -1,0 +1,49 @@
+{
+  "name": "prem-jewellers-billing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Premium offline-first billing application for Prem Jewellers, Jalgaon",
+  "author": {
+    "name": "Prem Jewellers",
+    "email": "billing@premjewellers.local"
+  },
+  "main": "dist-electron/electron/main/index.js",
+  "scripts": {
+    "dev": "concurrently -k -n VITE,TSC,ELECTRON -c cyan,yellow,green \"npm:dev:renderer\" \"npm:dev:main\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:main": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
+    "dev:electron": "wait-on tcp:5273 dist-electron/electron/main/index.js && cross-env NODE_ENV=development electron .",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.electron.json",
+    "build:renderer": "vite build",
+    "typecheck": "tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "test": "npm run build:main && node --test tests/*.test.mjs",
+    "start": "npm run build && electron .",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "postinstall": "electron-builder install-app-deps",
+    "test:e2e": "npm run build && electron tests/smoke.main.cjs",
+    "test:ui": "npm run build && electron tests/ui.main.cjs",
+    "verify": "npm run typecheck && npm run test && npm run test:e2e && npm run test:ui"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "wait-on": "^9.1.0"
+  }
+}
