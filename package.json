@@ -1,5 +1,6 @@
 {
   "name": "prem-jewellers-billing",
+  "productName": "Prem Jewellers Billing",
   "version": "1.0.0",
   "private": true,
   "description": "Premium offline-first billing application for Prem Jewellers, Jalgaon",
@@ -22,10 +23,10 @@
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win",
     "dist:mac": "npm run build && electron-builder --mac",
-    "postinstall": "electron-builder install-app-deps",
     "test:e2e": "npm run build && electron tests/smoke.main.cjs",
     "test:ui": "npm run build && electron tests/ui.main.cjs",
-    "verify": "npm run typecheck && npm run test && npm run test:e2e && npm run test:ui"
+    "verify": "npm run typecheck && npm run test && npm run test:e2e && npm run test:ui",
+    "dist:win:portable": "npm run build && electron-builder --win portable"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

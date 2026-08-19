@@ -12,12 +12,20 @@ files:
 asar: true
 asarUnpack:
   - '**/node_modules/better-sqlite3/**'
-npmRebuild: true
+# better-sqlite3 ships ABI-stable N-API prebuilds for every target platform, so
+# there is nothing to compile — no Visual Studio Build Tools, no node-gyp, no
+# Electron header download. Forcing a rebuild here would only add a toolchain
+# dependency that can fail on a clean machine.
+npmRebuild: false
 win:
   target:
     - target: nsis
       arch: [x64]
+    - target: portable
+      arch: [x64]
   artifactName: ${productName}-${version}-Setup.${ext}
+portable:
+  artifactName: ${productName}-${version}-Portable.${ext}
 nsis:
   oneClick: false
   perMachine: false
