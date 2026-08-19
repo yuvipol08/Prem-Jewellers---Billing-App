@@ -167,6 +167,12 @@ tests/               calculation and template unit tests, plus Electron end-to-e
 
 ---
 
+## Deploying and handing over
+
+[**DEPLOYMENT.md**](DEPLOYMENT.md) covers running the app on Windows, the remaining work
+before production, build commands with troubleshooting, and a delivery checklist for the
+shop.
+
 ## Development
 
 ```bash
@@ -191,9 +197,10 @@ npm run dist:win     # NSIS installer for Windows (x64)
 npm run dist:mac     # DMG for macOS (Intel + Apple Silicon)
 ```
 
-Build each installer **on** its target OS. `better-sqlite3` is a native module, so packaging
-needs to fetch Electron's node headers (or a matching prebuilt binary) the first time — run it
-on a machine with normal internet access.
+Build each installer **on** its target OS. No compiler toolchain is required —
+`better-sqlite3` ships ABI-stable N-API prebuilds for every platform, so there is nothing to
+build from source (no Visual Studio Build Tools, no node-gyp). electron-builder does download
+Electron and the installer toolchain on first run, so the machine needs normal internet access.
 
 ---
 
