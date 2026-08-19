@@ -1,0 +1,41 @@
+appId: in.premjewellers.billing
+productName: Prem Jewellers Billing
+copyright: Copyright © Prem Jewellers, Jalgaon
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+  - '!**/*.map'
+asar: true
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+npmRebuild: true
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: ${productName}-${version}-Setup.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Prem Jewellers Billing
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  category: public.app-category.business
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  hardenedRuntime: true
+  gatekeeperAssess: false
+dmg:
+  title: Prem Jewellers Billing
+linux:
+  target:
+    - AppImage
+  category: Office
