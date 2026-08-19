@@ -10,3 +10,4 @@ Thumbs.db
 *.tsbuildinfo
 .env
 .env.local
+qa-results/

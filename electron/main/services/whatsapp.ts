@@ -1,41 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { shell } from 'electron';
-import { computeInvoice, formatCurrency } from '../../../shared/calc';
+import { buildMessage, normaliseMobile } from '../../../shared/whatsapp';
 import type { Invoice, WhatsAppSettings } from '../../../shared/types';
 import { getSettings } from '../db/settings';
 import { exportInvoicePdf, revealPath } from './documents';
 
 const GRAPH_VERSION = 'v21.0';
 
-/** Normalises "98765 43210" / "+91-9876543210" to the digits WhatsApp expects. */
-export function normaliseMobile(mobile: string, defaultCountryCode: string): string {
-  let digits = (mobile || '').replace(/\D/g, '');
-  if (!digits) return '';
-
-  // Strip a leading 0 (STD prefix) before applying the country code.
-  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
-
-  const country = (defaultCountryCode || '91').replace(/\D/g, '');
-  if (digits.length === 10) return `${country}${digits}`;
-  return digits;
-}
-
-export function buildMessage(invoice: Invoice, template: string, shopName: string): string {
-  const computed = computeInvoice(invoice);
-  const replacements: Record<string, string> = {
-    '{customerName}': invoice.customerName.trim() || 'Customer',
-    '{shopName}': shopName,
-    '{invoiceNo}': invoice.invoiceNo,
-    '{invoiceDate}': invoice.invoiceDate,
-    '{grandTotal}': formatCurrency(computed.totals.grandTotal),
-  };
-
-  return Object.entries(replacements).reduce(
-    (message, [token, value]) => message.split(token).join(value),
-    template,
-  );
-}
+export { buildMessage, normaliseMobile };
 
 async function graphRequest(url: string, token: string, body: FormData | string, isJson: boolean) {
   const response = await fetch(url, {

@@ -16,6 +16,7 @@ const PAYMENT_MODES: PaymentMode[] = ['Cash', 'Cheque', 'Online'];
 export interface BillingPageHandle {
   newInvoice(): void;
   save(): void;
+  saveAndPrint(): void;
   preview(): void;
   print(): void;
   exportPdf(): void;
@@ -44,6 +45,14 @@ export function BillingPage({
   const [showPreview, setShowPreview] = useState(false);
   const [dirty, setDirty] = useState(false);
   const customerFieldRef = useRef<HTMLInputElement>(null);
+  const savingRef = useRef<Promise<Invoice | null> | null>(null);
+  /**
+   * The invoice exactly as it currently exists in the database, or null when it
+   * is unsaved or has been edited since. A ref rather than state because the
+   * output actions read it *after* an await, where a render closure would still
+   * be holding the pre-save value and would save the bill a second time.
+   */
+  const persistedRef = useRef<Invoice | null>(null);
 
   const computed = useMemo(() => computeInvoice(invoice), [invoice]);
   const isEditing = Boolean(invoice.id);
@@ -55,6 +64,7 @@ export function BillingPage({
     const invoiceNo = await api().invoices.nextNumber();
     setInvoice(createEmptyInvoice(invoiceNo, settings.shop));
     setDirty(false);
+    persistedRef.current = null;
     requestAnimationFrame(() => customerFieldRef.current?.focus());
   }, [settings.shop]);
 
@@ -68,6 +78,9 @@ export function BillingPage({
     if (!loadInvoice) return;
     setInvoice(loadInvoice);
     setDirty(false);
+    // A bill arriving from the Invoices tab is already stored unless it is a
+    // duplicate, which arrives without an id.
+    persistedRef.current = loadInvoice.id ? loadInvoice : null;
     onInvoiceLoaded();
   }, [loadInvoice, onInvoiceLoaded]);
 
@@ -76,6 +89,7 @@ export function BillingPage({
   const patch = useCallback((changes: Partial<Invoice>) => {
     setInvoice((current) => ({ ...current, ...changes }));
     setDirty(true);
+    persistedRef.current = null;
   }, []);
 
   const patchItem = useCallback((index: number, changes: Partial<InvoiceItem>) => {
@@ -86,6 +100,7 @@ export function BillingPage({
       return { ...current, items };
     });
     setDirty(true);
+    persistedRef.current = null;
   }, []);
 
   const addRow = useCallback(() => {
@@ -93,6 +108,7 @@ export function BillingPage({
       ...current,
       items: [...current.items, createEmptyItem(settings.shop)],
     }));
+    persistedRef.current = null;
   }, [settings.shop]);
 
   const removeRow = useCallback(
@@ -103,6 +119,7 @@ export function BillingPage({
         return { ...current, items: items.length ? items : [createEmptyItem(settings.shop)] };
       });
       setDirty(true);
+      persistedRef.current = null;
     },
     [settings.shop],
   );
@@ -142,14 +159,24 @@ export function BillingPage({
     return null;
   }, [invoice.customerName, hasItems]);
 
-  /** Saves the bill and, when the customer is new, files them in the database too. */
-  const save = useCallback(async (): Promise<Invoice | null> => {
+  /**
+   * Saves the bill and, when the customer is new, files them in the database too.
+   *
+   * Concurrent calls share one in-flight promise. Without that, a shortcut that
+   * triggers save and print together would let print re-enter save before the
+   * first had returned an invoice number, writing the same bill twice under two
+   * different numbers.
+   */
+  const save = useCallback((): Promise<Invoice | null> => {
     const problem = validate();
     if (problem) {
       toast.error(problem);
-      return null;
+      return Promise.resolve(null);
     }
 
+    if (savingRef.current) return savingRef.current;
+
+    const run = async (): Promise<Invoice | null> => {
     setBusy(true);
     try {
       let customerId = invoice.customerId;
@@ -182,6 +209,7 @@ export function BillingPage({
       };
       setInvoice(stored);
       setDirty(false);
+      persistedRef.current = stored;
       onSaved();
       toast.success(`Invoice ${result.data.invoiceNo} saved.`);
       return stored;
@@ -191,13 +219,27 @@ export function BillingPage({
     } finally {
       setBusy(false);
     }
+    };
+
+    const inFlight = run();
+    savingRef.current = inFlight;
+    void inFlight.finally(() => {
+      savingRef.current = null;
+    });
+    return inFlight;
   }, [invoice, validate, toast, onSaved]);
 
-  /** Every output action saves first, so a printed bill is always in the books. */
+  /**
+   * Every output action saves first, so a printed bill is always in the books.
+   *
+   * Reads the ref, not the rendered invoice: after an awaited save the closure
+   * still holds the pre-save value, and trusting it would save the same bill
+   * twice under two invoice numbers.
+   */
   const ensureSaved = useCallback(async (): Promise<Invoice | null> => {
-    if (invoice.id && !dirty) return invoice;
+    if (persistedRef.current) return persistedRef.current;
     return save();
-  }, [invoice, dirty, save]);
+  }, [save]);
 
   const doPreview = useCallback(async () => {
     if (validate()) {
@@ -258,20 +300,39 @@ export function BillingPage({
 
   const saveAndPrint = useCallback(async () => {
     const saved = await save();
-    if (saved) await doPrint();
-  }, [save, doPrint]);
+    if (!saved) return;
+    // Print the invoice save() just returned rather than going back through
+    // ensureSaved, which would re-read state that has not re-rendered yet.
+    setBusy(true);
+    try {
+      const result = await api().documents.print(saved);
+      if (!result.ok) toast.error(result.message ?? 'Printing failed.');
+    } finally {
+      setBusy(false);
+    }
+  }, [save, toast]);
 
   // Menu items and global shortcuts drive the same handlers as the buttons.
   useEffect(() => {
     registerHandle({
       newInvoice: () => void startNewInvoice(),
       save: () => void save(),
+      saveAndPrint: () => void saveAndPrint(),
       preview: () => void doPreview(),
       print: () => void doPrint(),
       exportPdf: () => void doExportPdf(),
       shareWhatsApp: () => void doWhatsApp(),
     });
-  }, [registerHandle, startNewInvoice, save, doPreview, doPrint, doExportPdf, doWhatsApp]);
+  }, [
+    registerHandle,
+    startNewInvoice,
+    save,
+    saveAndPrint,
+    doPreview,
+    doPrint,
+    doExportPdf,
+    doWhatsApp,
+  ]);
 
   const { totals } = computed;
 

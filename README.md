@@ -167,6 +167,18 @@ tests/               calculation and template unit tests, plus Electron end-to-e
 
 ---
 
+## Documentation
+
+| Document | For |
+| --- | --- |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Running on Windows, remaining work, build commands, delivery checklist |
+| [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md) | Test results, defects found and fixed, what remains unverified |
+| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Installing and first-run setup at the shop |
+| [docs/BACKUP_AND_RESTORE.md](docs/BACKUP_AND_RESTORE.md) | Backup routine, cloud setup, the emergency wipe |
+| [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) | Architecture and maintenance |
+| [docs/Prem-Jewellers-Billing-User-Manual.pdf](docs/Prem-Jewellers-Billing-User-Manual.pdf) | The counter staff's manual |
+| [CHANGELOG.md](CHANGELOG.md) | Release history |
+
 ## Deploying and handing over
 
 [**DEPLOYMENT.md**](DEPLOYMENT.md) covers running the app on Windows, the remaining work
@@ -181,14 +193,19 @@ npm run dev          # Vite + tsc watch + Electron, with hot reload
 ```
 
 ```bash
-npm run typecheck    # both TypeScript projects
-npm test             # calculation and invoice-template unit tests
-npm run test:e2e     # database, numbering, PDF and wipe, inside real Electron
-npm run test:ui      # boots the built UI and asserts it renders, with screenshots
-npm run verify       # all of the above
+npm run typecheck     # both TypeScript projects
+npm test              # 94 unit tests: calculations, template, numbering, messaging
+npm run test:core     # database, numbering, billing cycle, PDF
+npm run test:backup   # backup, restore, cloud, emergency wipe, WhatsApp
+npm run test:security # injection, escaping, credentials, process isolation
+npm run test:ui       # boots the built UI and drives it, saving screenshots
+npm run test:perf     # 5,000-invoice stress, memory, timings
+npm run qa            # all six suites, writes qa-results/summary.json
+npm run verify        # typecheck + qa
 ```
 
-On a headless Linux machine, prefix the Electron test commands with `xvfb-run -a`.
+236 checks across six suites. The QA runner adds `xvfb-run` by itself on headless Linux.
+Raise the stress size with `PJ_STRESS_INVOICES=20000 npm run test:perf`.
 
 ### Building installers
 

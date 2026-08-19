@@ -226,14 +226,20 @@ export function computeInvoice(invoice: Invoice): ComputedInvoice {
   };
 }
 
-/** ₹ formatting with Indian digit grouping (1,23,456.00). */
+/**
+ * ₹ formatting with Indian digit grouping (1,23,456.00).
+ *
+ * The sign is placed outside the symbol — "-₹1,234.50", not "₹-1,234.50" —
+ * which is how a negative round-off or an overpaid balance should read.
+ */
 export function formatCurrency(value: number, withSymbol = true): string {
   const amount = round2(toNumber(value));
-  const formatted = new Intl.NumberFormat('en-IN', {
+  const magnitude = new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
-  return withSymbol ? `₹${formatted}` : formatted;
+  }).format(Math.abs(amount));
+  const sign = amount < 0 ? '-' : '';
+  return withSymbol ? `${sign}₹${magnitude}` : `${sign}${magnitude}`;
 }
 
 export function formatWeight(value: number): string {

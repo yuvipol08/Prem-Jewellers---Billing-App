@@ -2,9 +2,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-const { computeInvoice } = await import('../dist-electron/shared/calc.js');
-const { renderInvoiceHtml, escapeHtml } = await import('../dist-electron/shared/invoiceTemplate.js');
-const { DEFAULT_SHOP } = await import('../dist-electron/shared/defaults.js');
+const { computeInvoice } = await import('../../dist-electron/shared/calc.js');
+const { renderInvoiceHtml, escapeHtml } = await import('../../dist-electron/shared/invoiceTemplate.js');
+const { DEFAULT_SHOP } = await import('../../dist-electron/shared/defaults.js');
 
 const baseInvoice = (overrides = {}) => ({
   invoiceNo: 'PJ/25-26/0007',

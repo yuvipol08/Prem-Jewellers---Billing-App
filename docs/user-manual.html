@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8" />
+<title>Prem Jewellers Billing — User Manual</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: #fff; color: #1a1a1a;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt; line-height: 1.55;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .page { width: 210mm; min-height: 297mm; padding: 16mm 18mm; margin: 0 auto; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+
+  .cover { display: flex; flex-direction: column; justify-content: center; text-align: center; }
+  .cover .mark {
+    width: 26mm; height: 26mm; border-radius: 50%; margin: 0 auto 8mm;
+    background: linear-gradient(140deg, #9b1b1b, #6d1414); color: #fff;
+    display: grid; place-items: center; font-size: 26pt; font-weight: 700; letter-spacing: 1pt;
+  }
+  .cover h1 { font-size: 30pt; color: #9b1b1b; margin: 0 0 3mm; letter-spacing: .5pt; }
+  .cover .sub { font-size: 12pt; letter-spacing: 3pt; text-transform: uppercase; color: #6b5a2e; margin-bottom: 12mm; }
+  .cover .title { font-size: 18pt; font-weight: 600; margin-bottom: 3mm; }
+  .cover .meta { font-size: 10pt; color: #6b6b6b; margin-top: 14mm; line-height: 1.9; }
+
+  h2 {
+    font-size: 15pt; color: #9b1b1b; margin: 0 0 4mm;
+    padding-bottom: 2mm; border-bottom: 1.2pt solid #9b1b1b;
+  }
+  h3 { font-size: 11.5pt; margin: 7mm 0 2mm; color: #6d1414; }
+  p { margin: 0 0 3mm; }
+  ol, ul { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.5mm; }
+
+  .step { display: grid; grid-template-columns: 8mm 1fr; gap: 3mm; margin-bottom: 3mm; }
+  .step .n {
+    width: 6.5mm; height: 6.5mm; border-radius: 50%; background: #9b1b1b; color: #fff;
+    display: grid; place-items: center; font-size: 8.5pt; font-weight: 700;
+  }
+  .step .t { padding-top: .5mm; }
+
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0; font-size: 9.8pt; }
+  th { text-align: left; background: #f6ecec; color: #6d1414; padding: 2mm; font-size: 8.5pt;
+       text-transform: uppercase; letter-spacing: .5pt; border-bottom: 1pt solid #9b1b1b; }
+  td { padding: 2mm; border-bottom: .5pt solid #e8dede; vertical-align: top; }
+  kbd {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 9pt;
+    border: 1pt solid #cfc2bc; border-radius: 2pt; padding: .3mm 1.5mm; background: #faf8f6;
+  }
+  .note { border-left: 3pt solid #c8a44a; background: #f9f4e6; padding: 3mm 4mm; margin: 3mm 0; }
+  .warn { border-left: 3pt solid #9b1b1b; background: #fbeeee; padding: 3mm 4mm; margin: 3mm 0; }
+  .note b, .warn b { display: block; margin-bottom: 1mm; }
+  .warn b { color: #9b1b1b; }
+  .foot { position: running(footer); }
+  @page { size: A4 portrait; margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<section class="page cover">
+  <div class="mark">PJ</div>
+  <h1>Prem Jewellers</h1>
+  <div class="sub">Gold &middot; Silver &middot; Diamond</div>
+  <div class="title">Billing Software — User Manual</div>
+  <p style="color:#6b6b6b">Everyday guide for the counter</p>
+  <div class="meta">
+    Version 1.0.0<br />
+    Jalgaon, Maharashtra<br />
+    Keep this manual near the billing computer
+  </div>
+</section>
+
+<!-- ============================================================ BASICS -->
+<section class="page">
+  <h2>1. Opening the software</h2>
+  <p>Double-click the <b>Prem Jewellers Billing</b> icon on the desktop. The software opens straight
+  onto the <b>Billing</b> screen with a new invoice number already prepared.</p>
+
+  <div class="note">
+    <b>The software works without internet</b>
+    Every bill is saved on this computer. If the internet is off, the top-right corner shows
+    <i>Offline — billing continues</i>. You can keep billing, printing and saving exactly as normal.
+    Internet is only needed for cloud backup and for sending a bill on WhatsApp.
+  </div>
+
+  <h3>The five screens</h3>
+  <table>
+    <tr><th style="width:34mm">Screen</th><th>What it is for</th></tr>
+    <tr><td><b>Billing</b></td><td>Making a new bill. This is where you spend the day.</td></tr>
+    <tr><td><b>Customers</b></td><td>The customer book, with each customer's past purchases.</td></tr>
+    <tr><td><b>Invoices</b></td><td>Every bill ever made. Search, reprint, download.</td></tr>
+    <tr><td><b>Dashboard</b></td><td>Today's sales, this month, this year.</td></tr>
+    <tr><td><b>Backup &amp; Settings</b></td><td>Shop details, backup, and the emergency button.</td></tr>
+  </table>
+  <p>Move between screens by clicking the tabs at the top, or by holding <kbd>Ctrl</kbd> and pressing
+  <kbd>1</kbd> to <kbd>5</kbd>.</p>
+
+  <h2 style="margin-top:10mm">2. Making a bill</h2>
+
+  <div class="step"><div class="n">1</div><div class="t">
+    <b>Customer.</b> Start typing the customer's name, mobile number or GST number in the
+    <b>Name</b> box. If they have bought from you before, their details appear in a list — use the
+    arrow keys and press <kbd>Enter</kbd> to pick them. Everything else fills in by itself.
+    <br />For a new customer, simply type their details. They are saved automatically when you save
+    the bill — there is nothing extra to do.
+  </div></div>
+
+  <div class="step"><div class="n">2</div><div class="t">
+    <b>Items.</b> Fill the item table exactly as you would write the paper bill:
+    <table>
+      <tr><th style="width:32mm">Column</th><th>What to enter</th></tr>
+      <tr><td>HSN</td><td>7113 for gold and silver jewellery (already filled in)</td></tr>
+      <tr><td>Particulars</td><td>Description, e.g. <i>Gold Necklace 22K</i></td></tr>
+      <tr><td>Gross Wt (g)</td><td>Total weight including stones</td></tr>
+      <tr><td>Net Wt (g)</td><td>Metal weight you are charging for</td></tr>
+      <tr><td>Rate (₹/g)</td><td>Today's rate per gram</td></tr>
+      <tr><td>Making</td><td>Making charge — see below</td></tr>
+    </table>
+  </div></div>
+
+  <div class="step"><div class="n">3</div><div class="t">
+    <b>Making charge.</b> Next to the making charge box there is a small selector with three choices.
+    Pick whichever matches how you quoted the customer:
+    <ul>
+      <li><b>₹</b> — a flat amount for the item, e.g. ₹1,500</li>
+      <li><b>/g</b> — an amount per gram, e.g. ₹450 per gram</li>
+      <li><b>%</b> — a percentage of the metal value, e.g. 12%</li>
+    </ul>
+  </div></div>
+
+  <div class="step"><div class="n">4</div><div class="t">
+    <b>Check the total.</b> The right side updates as you type — taxable value, CGST, SGST, round off
+    and the grand total, with the amount written out in words. GST is worked out automatically at 3%.
+  </div></div>
+
+  <div class="step"><div class="n">5</div><div class="t">
+    <b>Payment.</b> Click <b>Cash</b>, <b>Cheque</b> or <b>Online</b>. For cheque or online, a box
+    appears for the cheque number or transaction reference. If the customer is paying only part of
+    the amount today, type what they paid in <b>Amount Received</b> and the balance is shown.
+  </div></div>
+
+  <div class="step"><div class="n">6</div><div class="t">
+    <b>Save and print.</b> Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, or click the big red
+    <b>Save &amp; Print</b> button. The bill is saved and the printer dialog opens.
+  </div></div>
+
+  <div class="note">
+    <b>Typing faster</b>
+    Press <kbd>Enter</kbd> inside the item table to jump down the same column, and a new line is
+    added automatically when you reach the bottom. You never need the mouse to make a bill.
+  </div>
+</section>
+
+<!-- ============================================================ PRINT -->
+<section class="page">
+  <h2>3. Printing, PDF and WhatsApp</h2>
+
+  <h3>Printing</h3>
+  <p>Press <kbd>Ctrl</kbd>+<kbd>P</kbd>. In the printer window make sure it is set to
+  <b>A4</b>, <b>Portrait</b>, and scale <b>100%</b>. Do not use "Fit to page" — it will move the
+  weight columns out of line.</p>
+  <p>To see the bill before printing, press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> for a
+  preview. What you see is exactly what will be printed.</p>
+
+  <h3>Saving a PDF</h3>
+  <p>Press <kbd>Ctrl</kbd>+<kbd>E</kbd>, choose where to save, and the file is created. Your file
+  manager opens with the PDF highlighted.</p>
+
+  <h3>Sending on WhatsApp</h3>
+  <p>Press <kbd>Ctrl</kbd>+<kbd>W</kbd> or click <b>WhatsApp</b>. What happens next depends on how
+  the software has been set up:</p>
+  <ul>
+    <li><b>Normal setup:</b> WhatsApp opens on the customer's chat with the message already written,
+    and the PDF is highlighted in your file manager. Drag the PDF into the chat and send.</li>
+    <li><b>Automatic setup:</b> the PDF is sent to the customer by itself.</li>
+  </ul>
+
+  <h2 style="margin-top:10mm">4. Finding and reprinting an old bill</h2>
+  <p>Go to <b>Invoices</b> (<kbd>Ctrl</kbd>+<kbd>3</kbd>). You can:</p>
+  <ul>
+    <li>Type a bill number, customer name or mobile number in the search box</li>
+    <li>Choose a date range — Today, Last 7 days, Last 30 days, or All</li>
+    <li>Filter by Cash, Cheque or Online</li>
+  </ul>
+  <p>Each row has buttons: <b>View</b> to see it, <b>Reprint</b> to print another copy,
+  <b>PDF</b> to save it, <b>WhatsApp</b> to send it, and <b>Duplicate</b> to start a new bill using
+  the same items.</p>
+
+  <div class="note">
+    <b>Reprints are marked</b>
+    A reprinted bill carries a small <i>Duplicate Copy</i> mark, so it is never mistaken for the
+    original.
+  </div>
+
+  <h3>Correcting a mistake</h3>
+  <p>A bill made <b>today</b> can be corrected: open <b>Invoices</b>, find it, and click <b>Edit</b>.
+  Make the change and save again.</p>
+  <p>A bill from an earlier day cannot be changed, because it has already gone into the books.
+  Instead click <b>Cancel</b> on it and make a fresh bill. A cancelled bill stays in the records for
+  your GST return but stops counting as a sale.</p>
+
+  <h2 style="margin-top:10mm">5. Customers</h2>
+  <p>Go to <b>Customers</b> (<kbd>Ctrl</kbd>+<kbd>2</kbd>). Search by name, mobile, GST number or
+  PAN. Click any customer to see everything they have ever bought and how much they have spent
+  in total.</p>
+  <p>Customers are saved automatically every time you bill someone, so this list builds itself.</p>
+</section>
+
+<!-- ============================================================ BACKUP -->
+<section class="page">
+  <h2>6. Backup — please read</h2>
+  <p>Your bills live on this computer. If the computer is lost, stolen or damaged, the bills go with
+  it unless you have a backup. Doing this takes under a minute.</p>
+
+  <h3>Every day: save a backup file</h3>
+  <div class="step"><div class="n">1</div><div class="t">Go to <b>Backup &amp; Settings</b> (<kbd>Ctrl</kbd>+<kbd>5</kbd>) and click <b>Offline Backup</b>.</div></div>
+  <div class="step"><div class="n">2</div><div class="t">Click <b>Save Backup File</b>.</div></div>
+  <div class="step"><div class="n">3</div><div class="t">Save it onto a pen drive, and keep the pen drive somewhere other than the shop.</div></div>
+
+  <p>You can also set this to happen by itself: choose a folder under <b>Automatic Backup Folder</b>
+  and set <b>On Closing the App</b> to write a backup. Then a backup is written every time you close
+  the software.</p>
+
+  <h3>Restoring from a backup</h3>
+  <p>Click <b>Restore From File</b> and choose your backup file. Bills already on the computer are
+  not duplicated — the software matches them by bill number.</p>
+
+  <h3>Cloud backup</h3>
+  <p>If cloud backup has been set up for you, click <b>Back Up Now</b> under <b>Cloud Backup</b> to
+  send everything to your online account. <b>Restore From Cloud</b> brings it all back.</p>
+
+  <h2 style="margin-top:10mm">7. Emergency Backup &amp; Clear Device</h2>
+  <div class="warn">
+    <b>This permanently erases all bills and customers from this computer</b>
+    Use it only if the computer may be seen by someone who should not see your records.
+  </div>
+
+  <p>What the button does, in this order:</p>
+  <div class="step"><div class="n">1</div><div class="t">Sends every bill and customer to your online account.</div></div>
+  <div class="step"><div class="n">2</div><div class="t">Reads it all back and checks it arrived complete and correct.</div></div>
+  <div class="step"><div class="n">3</div><div class="t">Only then erases everything from this computer.</div></div>
+
+  <p>If the upload fails, or the check fails, <b>nothing is deleted</b> and the software tells you
+  what went wrong. Your shop details stay, so the software still works normally afterwards.</p>
+
+  <p>To use it: <b>Backup &amp; Settings</b> → <b>Emergency</b> → type
+  <kbd>BACKUP AND CLEAR</kbd> exactly → confirm.</p>
+
+  <p>To get everything back later, use <b>Restore From Cloud</b>.</p>
+
+  <div class="warn">
+    <b>There is no undo</b>
+    Once cleared, the only copy is the one online. Make sure cloud backup has been tested and works
+    before you ever use this button.
+  </div>
+</section>
+
+<!-- ============================================================ SHORTCUTS -->
+<section class="page">
+  <h2>8. Keyboard shortcuts</h2>
+  <p>Print this page and keep it near the counter.</p>
+
+  <h3>Making a bill</h3>
+  <table>
+    <tr><th style="width:44mm">Keys</th><th>What it does</th></tr>
+    <tr><td><kbd>F2</kbd></td><td>Start a new bill</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Save the bill</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Save and print</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>P</kbd></td><td>Print</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd></td><td>Print preview</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Save as PDF</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>W</kbd></td><td>Send on WhatsApp</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>N</kbd></td><td>Add another item line</td></tr>
+    <tr><td><kbd>Enter</kbd></td><td>In the item table: move down the same column</td></tr>
+  </table>
+
+  <h3>Moving around</h3>
+  <table>
+    <tr><th style="width:44mm">Keys</th><th>What it does</th></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>1</kbd></td><td>Billing</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>2</kbd></td><td>Customers</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>3</kbd></td><td>Invoices</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>4</kbd></td><td>Dashboard</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>5</kbd></td><td>Backup &amp; Settings</td></tr>
+    <tr><td><kbd>F1</kbd></td><td>Show this shortcut list on screen</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Close a window that has opened</td></tr>
+  </table>
+
+  <h2 style="margin-top:10mm">9. If something goes wrong</h2>
+  <table>
+    <tr><th style="width:56mm">Problem</th><th>What to do</th></tr>
+    <tr><td>The bill prints too small or columns do not line up</td>
+        <td>In the printer window set scale to <b>100%</b>, not "Fit to page", and paper to <b>A4</b>.</td></tr>
+    <tr><td>It says <i>Offline</i></td>
+        <td>Nothing is wrong. Billing, printing and saving all work. Only WhatsApp and cloud backup need internet.</td></tr>
+    <tr><td>A customer's details did not fill in</td>
+        <td>Type at least two letters and wait a moment for the list to appear, then pick from the list rather than typing over it.</td></tr>
+    <tr><td>The bill number is wrong</td>
+        <td>You can type over it in the <b>Invoice No</b> box before saving. If the number is already used by another bill, the software will tell you.</td></tr>
+    <tr><td>I cannot edit an old bill</td>
+        <td>Only today's bills can be edited. Cancel the old one and make a fresh bill.</td></tr>
+    <tr><td>The software will not start</td>
+        <td>Restart the computer and try again. If it still fails, contact your supplier — do not reinstall, as that is not needed to fix it and your bills are safe on the computer.</td></tr>
+  </table>
+
+  <div class="note" style="margin-top:8mm">
+    <b>Where your bills are stored</b>
+    All records are kept on this computer at<br />
+    <kbd>%APPDATA%\Prem Jewellers Billing\prem-jewellers.db</kbd><br />
+    Never delete or move this file. To make a copy, use <b>Save Backup File</b> instead.
+  </div>
+
+  <p style="margin-top:14mm; text-align:center; color:#8a8a8a; font-size:9pt">
+    Prem Jewellers Billing v1.0.0 &middot; User Manual
+  </p>
+</section>
+
+</body>
+</html>
