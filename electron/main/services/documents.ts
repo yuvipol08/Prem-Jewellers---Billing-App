@@ -1,11 +1,23 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFile as execFileCallback } from 'node:child_process';
+import { promisify } from 'node:util';
 import { BrowserWindow, dialog, shell } from 'electron';
 import { computeInvoice } from '../../../shared/calc';
 import { renderInvoiceHtml } from '../../../shared/invoiceTemplate';
+import {
+  orderPrinters,
+  parseWindowsDefaultPrinter,
+  selectPrinter,
+  type PrinterChoice,
+} from '../../../shared/printers';
 import type { Invoice } from '../../../shared/types';
 import { getSettings } from '../db/settings';
+
+const execFile = promisify(execFileCallback);
+
+export type { PrinterChoice };
 
 /** Safe file name for an invoice PDF: "PJ_25-26_0001_Ramesh.pdf". */
 export function pdfFileName(invoice: Invoice): string {
@@ -145,20 +157,32 @@ export async function saveInvoicePdfAs(
   return result.filePath;
 }
 
-export interface PrinterChoice {
-  name: string;
-  displayName: string;
-  description: string;
-  isDefault: boolean;
+/**
+ * The Windows default printer, read from the registry.
+ *
+ * Electron dropped `isDefault` from PrinterInfo and the replacement lives in a
+ * platform-specific `options` bag that Windows does not reliably populate — so
+ * detection failed there and selection fell through to the first printer in the
+ * list, which on a stock Windows install is often OneNote. The registry is the
+ * authoritative source, and any failure here just means we fall back a step.
+ */
+async function readSystemDefaultPrinter(): Promise<string> {
+  if (process.platform !== 'win32') return '';
+  try {
+    const { stdout } = await execFile(
+      'reg',
+      ['query', 'HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows', '/v', 'Device'],
+      { timeout: 3000, windowsHide: true },
+    );
+    return parseWindowsDefaultPrinter(stdout);
+  } catch {
+    return '';
+  }
 }
 
 /**
- * Whether the OS reports this as the default printer.
- *
- * Electron moved this out of PrinterInfo and into the platform-specific
- * `options` bag, where the key differs per platform — Windows reports
- * "printer-is-default", CUPS reports "is-default". Read whatever is there
- * rather than assuming a shape.
+ * Whether the OS reports this as the default printer, read from the
+ * platform-specific `options` bag where the key differs per platform.
  */
 function isDefaultPrinter(options: Record<string, unknown> | undefined): boolean {
   if (!options) return false;
@@ -169,17 +193,38 @@ function isDefaultPrinter(options: Record<string, unknown> | undefined): boolean
   return false;
 }
 
-/** Printers the OS is offering, for the in-app picker. */
-export async function listPrinters(): Promise<PrinterChoice[]> {
-  return withRenderWindow('<!doctype html><html><body></body></html>', async (window) => {
-    const printers = await window.webContents.getPrintersAsync();
-    return printers.map((printer) => ({
+export interface PrinterList {
+  printers: PrinterChoice[];
+  /** Preselected printer, and why — surfaced so the UI can explain itself. */
+  selected: string;
+  reason: string;
+  systemDefault: string;
+}
+
+/** Printers the OS is offering, ordered with real printers first. */
+export async function listPrinters(): Promise<PrinterList> {
+  const [raw, systemDefault] = await Promise.all([
+    withRenderWindow('<!doctype html><html><body></body></html>', (window) =>
+      window.webContents.getPrintersAsync(),
+    ),
+    readSystemDefaultPrinter(),
+  ]);
+
+  const printers = orderPrinters(
+    raw.map((printer) => ({
       name: printer.name,
       displayName: printer.displayName || printer.name,
       description: printer.description ?? '',
-      isDefault: isDefaultPrinter(printer.options as Record<string, unknown> | undefined),
-    }));
-  });
+      isDefault:
+        isDefaultPrinter(printer.options as Record<string, unknown> | undefined) ||
+        (systemDefault !== '' && printer.name === systemDefault),
+    })),
+  );
+
+  const remembered = getSettings().shop.defaultPrinter;
+  const selection = selectPrinter({ printers, remembered, systemDefault });
+
+  return { printers, selected: selection.name, reason: selection.reason, systemDefault };
 }
 
 export interface PrintRequest {
@@ -219,14 +264,28 @@ export async function printInvoice(
   const silent = request.useSystemDialog !== true;
 
   let deviceName = request.deviceName?.trim() ?? '';
-  if (silent && !deviceName) {
-    const printers = await listPrinters();
+
+  if (silent) {
+    const { printers, selected } = await listPrinters();
+
     if (printers.length === 0) {
       throw new Error(
-        'No printer is available. Connect a printer, or use Save PDF to print from another program.',
+        'No printer is available. Connect a printer, or use Save PDF to save the bill as a file.',
       );
     }
-    deviceName = (printers.find((printer) => printer.isDefault) ?? printers[0]).name;
+
+    if (deviceName) {
+      // Never quietly substitute a different printer: the shop asked for this
+      // one, and printing somewhere else is worse than not printing.
+      if (!printers.some((printer) => printer.name === deviceName)) {
+        throw new Error(
+          `"${deviceName}" is not available any more. Choose another printer in the preview, ` +
+            'or use Save PDF to save the bill as a file.',
+        );
+      }
+    } else {
+      deviceName = selected;
+    }
   }
 
   return withRenderWindow(html, async (window) => {

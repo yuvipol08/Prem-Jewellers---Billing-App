@@ -371,18 +371,32 @@ H.run('core', async () => {
     }
   });
 
-  await checkAsync('the printer list is readable without throwing', async () => {
-    const printers = await documents.listPrinters();
-    ok(Array.isArray(printers), 'not an array');
-    for (const printer of printers) {
+  await checkAsync('the printer list reports a selection and why', async () => {
+    const list = await documents.listPrinters();
+    ok(Array.isArray(list.printers), 'printers is not an array');
+    ok(typeof list.selected === 'string', 'no selection');
+    ok(typeof list.reason === 'string', 'no reason for the selection');
+    for (const printer of list.printers) {
       ok(typeof printer.name === 'string', 'printer name');
       ok(typeof printer.isDefault === 'boolean', 'default flag');
     }
-    return `${printers.length} printer(s) visible`;
+    return `${list.printers.length} printer(s), reason: ${list.reason}`;
+  });
+
+  await checkAsync('printing refuses to substitute a printer that has gone away', async () => {
+    let message = '';
+    try {
+      await documents.printInvoice(makeInvoice(), { deviceName: 'Printer That Was Unplugged' });
+    } catch (error) {
+      message = error.message;
+    }
+    ok(message.length > 0, 'printing to a missing printer should not silently succeed');
+    ok(/not available|no printer is available/i.test(message), `unhelpful message: ${message}`);
+    return 'refuses rather than printing elsewhere';
   });
 
   await checkAsync('printing with no printer attached explains itself', async () => {
-    const printers = await documents.listPrinters();
+    const { printers } = await documents.listPrinters();
     if (printers.length > 0) return 'skipped — a printer is attached';
     let message = '';
     try {

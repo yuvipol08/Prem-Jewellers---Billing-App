@@ -169,13 +169,29 @@ option that fixes this — the dialog itself is the problem.
 
 The flow instead is:
 
-1. `listPrinters()` wraps `getPrintersAsync()` for the picker in the preview modal. The default
-   flag lives in the platform-specific `options` bag, not on `PrinterInfo`, and the key differs
-   per platform — `isDefaultPrinter()` reads whatever key matches rather than assuming a shape.
+1. `listPrinters()` wraps `getPrintersAsync()` for the picker in the preview toolbar, and returns
+   which printer is preselected and why.
+
+   Detecting the default needed more than the `options` bag. Electron dropped `isDefault` from
+   `PrinterInfo`, and Windows does not reliably populate a replacement key — so detection returned
+   nothing there and selection fell through to `printers[0]`, which on a stock Windows install is
+   often OneNote. `readSystemDefaultPrinter()` now reads the authoritative value from
+   `HKCU\Software\Microsoft\Windows NT\CurrentVersion\Windows` and parses the printer name out
+   of it. Any failure falls back a step rather than throwing.
+
+   `selectPrinter()` in `shared/printers.ts` holds the order: the shop's remembered printer if it
+   is still connected, then the OS default, then **the first printer that puts ink on paper**, and
+   only then whatever is left. That third step is what stops a virtual printer being guessed at.
+   `isVirtualPrinter()` matches OneNote, Print to PDF, XPS, Fax and the common PDF writers.
 2. `printInvoice(invoice, { deviceName })` prints silently to that printer, from the same HTML the
    preview and the PDF are built from, with `pageSize: 'A4'` and `marginType: 'none'`.
-3. `useSystemDialog: true` still opens the OS dialog for tray and duplex options. That path shows
+3. A named printer that is no longer connected is refused with a message, never silently
+   substituted — printing a customer's bill on some other device is worse than not printing.
+4. `useSystemDialog: true` still opens the OS dialog for tray and duplex options. That path shows
    the unsupported-preview message, which is why it is opt-in.
+
+**Save PDF never touches a printer.** It goes through `printToPDF` and writes the file directly,
+so it cannot open OneNote or any other application.
 
 If you ever reinstate the system dialog as the default, expect the message to come back.
 

@@ -26,6 +26,14 @@ export interface PrinterChoice {
   isDefault: boolean;
 }
 
+export interface PrinterList {
+  printers: PrinterChoice[];
+  /** Preselected printer, and why — so the UI can explain its choice. */
+  selected: string;
+  reason: string;
+  systemDefault: string;
+}
+
 export interface PrintRequest {
   copyLabel?: string;
   /** OS printer name. Omit to use the system default. */
@@ -82,7 +90,7 @@ export interface BillingApi {
     previewHtml(invoice: Invoice, copyLabel?: string): Promise<string>;
     exportPdf(invoice: Invoice, copyLabel?: string): Promise<OperationResult<PdfResult>>;
     saveAsPdf(invoice: Invoice, copyLabel?: string): Promise<OperationResult<PdfResult>>;
-    listPrinters(): Promise<PrinterChoice[]>;
+    listPrinters(): Promise<PrinterList>;
     print(invoice: Invoice, request?: PrintRequest): Promise<OperationResult<PrintOutcome>>;
     openFile(filePath: string): Promise<OperationResult>;
     revealFile(filePath: string): Promise<OperationResult>;

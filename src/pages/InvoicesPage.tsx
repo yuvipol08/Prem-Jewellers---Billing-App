@@ -115,8 +115,7 @@ export function InvoicesPage({
       withInvoice(row.id, async (invoice) => {
         const result = await api().documents.saveAsPdf(invoice);
         if (result.ok && result.data) {
-          toast.success('PDF saved.');
-          void api().documents.revealFile(result.data.filePath);
+          toast.success(`PDF saved to ${result.data.filePath}`);
         } else if (result.message !== 'Save cancelled.') {
           toast.error(result.message ?? 'The PDF could not be created.');
         }
@@ -395,8 +394,7 @@ export function InvoicesPage({
               .documents.saveAsPdf(current)
               .then((result) => {
                 if (result.ok && result.data) {
-                  toast.success('PDF saved.');
-                  void api().documents.revealFile(result.data.filePath);
+                  toast.success(`PDF saved to ${result.data.filePath}`);
                 } else if (result.message !== 'Save cancelled.') {
                   toast.error(result.message ?? 'The PDF could not be created.');
                 }

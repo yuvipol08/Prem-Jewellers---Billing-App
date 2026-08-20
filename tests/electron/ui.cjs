@@ -176,25 +176,44 @@ H.run('ui', async () => {
   await shot('01-billing-filled');
 
   // ========================================================= print preview
-  group('print preview');
+  group('print preview viewer');
+
+  const viewer = () => js(`(() => {
+    const stage = document.querySelector('.preview-stage');
+    const sheet = document.querySelector('.preview-sheet');
+    const rect = sheet ? sheet.getBoundingClientRect() : null;
+    return {
+      open: !!document.querySelector('.modal'),
+      zoom: document.querySelector('.zoom-readout')?.textContent?.trim() ?? '',
+      active: [...document.querySelectorAll('.viewer-toolbar .btn')]
+        .filter((b) => b.classList.contains('btn-primary')).map((b) => b.textContent.trim()),
+      vScroll: stage ? stage.scrollHeight - stage.clientHeight : -1,
+      hScroll: stage ? stage.scrollWidth - stage.clientWidth : -1,
+      scrollTop: stage?.scrollTop ?? -1,
+      scrollLeft: stage?.scrollLeft ?? -1,
+      ratio: rect ? rect.height / rect.width : -1,
+      width: rect ? rect.width : -1,
+    };
+  })()`);
+
+  const toolbarClick = (label) =>
+    js(`[...document.querySelectorAll('.viewer-toolbar .btn')]
+         .find((b) => b.textContent.trim() === ${JSON.stringify(label)})?.click()`);
+  const zoomButton = (index) => js(`[...document.querySelectorAll('.icon-btn')][${index}]?.click()`);
+  const A4 = 297 / 210;
 
   await checkAsync('the preview opens and actually paints the invoice', async () => {
-    // A bill needs a customer before it can be previewed — that guard is correct.
     await type('.customer-search .input', 'Preview Customer');
     await pause(400);
     await js(`[...document.querySelectorAll('.btn')].find(b => b.textContent.trim() === 'Preview')?.click()`);
     await pause(2000);
 
-    ok(await js('!!document.querySelector(".modal")'), 'the preview did not open');
+    ok((await viewer()).open, 'the preview did not open');
     const frame = await js(`(() => {
       const f = document.querySelector('iframe.preview-frame');
-      if (!f) return null;
-      return { sandbox: f.getAttribute('sandbox'), len: (f.getAttribute('srcdoc') || '').length };
+      return f ? { sandbox: f.getAttribute('sandbox'), len: (f.getAttribute('srcdoc') || '').length } : null;
     })()`);
-    ok(frame, 'no preview frame');
-    ok(frame.len > 5000, `srcdoc was only ${frame.len} chars`);
-    // allow-same-origin is required: with a bare sandbox the document gets an
-    // opaque origin, its inline <style> is dropped, and the sheet renders blank.
+    ok(frame && frame.len > 5000, 'the invoice markup did not reach the frame');
     ok((frame.sandbox || '').includes('allow-same-origin'), 'the frame would render unstyled');
     ok(!(frame.sandbox || '').includes('allow-scripts'), 'the preview must not run scripts');
 
@@ -206,57 +225,122 @@ H.run('ui', async () => {
       const b = bitmap[i]; const g = bitmap[i + 1]; const r = bitmap[i + 2];
       if (r > 110 && r < 200 && g < 80 && b < 80) red += 1;
     }
-    // Baseline measured against the bug: a blank preview paints 0–30 branded
-    // pixels, a rendered sheet paints thousands. 600 sits safely between, and
-    // holds across window sizes and however much of the identity is filled in.
     ok(red > 600, `the preview looks blank — only ${red} branded pixels painted`);
     fs.writeFileSync(path.join(SHOTS, '07-print-preview.png'), image.toPNG());
     return `${red.toLocaleString()} branded pixels painted`;
   });
 
-  await checkAsync('the preview has exactly one scroll container, and nothing to scroll', async () => {
-    const measured = await js(`(() => {
-      const el = (s) => document.querySelector(s);
-      const overflow = (n) => (n ? n.scrollHeight - n.clientHeight : null);
-      return {
-        modalBody: overflow(el('.modal-body')),
-        stage: overflow(el('.preview-stage')),
-        // The sheet is sized to the scaled page, so the frame itself must not scroll.
-        frameScrolling: el('iframe.preview-frame')?.getAttribute('scrolling'),
-      };
+  await checkAsync('the toolbar carries every viewer control', async () => {
+    const labels = await js(`[...document.querySelectorAll('.viewer-toolbar .btn, .viewer-toolbar .icon-btn, .zoom-readout')]
+      .map((b) => b.textContent.trim())`);
+    for (const expected of ['−', '+', 'Fit Page', 'Fit Width', 'Save PDF', 'Print']) {
+      ok(labels.includes(expected), `toolbar is missing: ${expected}`);
+    }
+    ok(labels.some((l) => /%$/.test(l)), 'no zoom percentage shown');
+    ok(await js('!!document.querySelector("#printer-choice")'), 'no printer picker in the toolbar');
+    return labels.join(' ');
+  });
+
+  await checkAsync('Fit Page shows the whole sheet with no scrollbars', async () => {
+    await toolbarClick('Fit Page');
+    await pause(600);
+    const state = await viewer();
+    ok(state.active.includes('Fit Page'), 'Fit Page is not marked active');
+    eq(state.vScroll, 0, 'vertical scrollbar present when fitting the page');
+    eq(state.hScroll, 0, 'horizontal scrollbar present when fitting the page');
+    ok(Math.abs(state.ratio - A4) < 0.01, `aspect ${state.ratio.toFixed(4)} is not A4`);
+    return `${state.zoom}, ratio ${state.ratio.toFixed(4)}`;
+  });
+
+  await checkAsync('Fit Width fills the width and scrolls only vertically', async () => {
+    await toolbarClick('Fit Width');
+    await pause(600);
+    const state = await viewer();
+    ok(state.active.includes('Fit Width'), 'Fit Width is not marked active');
+    eq(state.hScroll, 0, 'fitting the width should not scroll sideways');
+    ok(state.vScroll > 0, 'a full-width A4 page should scroll vertically');
+    ok(Math.abs(state.ratio - A4) < 0.01, `aspect ${state.ratio.toFixed(4)} is not A4`);
+    return `${state.zoom}, vertical scroll ${state.vScroll}px`;
+  });
+
+  await checkAsync('the zoom buttons step up and down, and the readout resets to 100%', async () => {
+    await js(`document.querySelector('.zoom-readout')?.click()`);
+    await pause(400);
+    eq((await viewer()).zoom, '100%', 'clicking the readout should reset to 100%');
+
+    await zoomButton(1); await pause(300);
+    const zoomedIn = await viewer();
+    ok(parseInt(zoomedIn.zoom, 10) > 100, `zoom in did nothing: ${zoomedIn.zoom}`);
+
+    await zoomButton(0); await pause(300);
+    eq((await viewer()).zoom, '100%', 'zoom out did not return to 100%');
+    return 'ladder steps correctly';
+  });
+
+  await checkAsync('zooming in produces scrollbars and keeps A4 proportions', async () => {
+    for (let i = 0; i < 3; i += 1) { await zoomButton(1); await pause(260); }
+    const state = await viewer();
+    ok(parseInt(state.zoom, 10) >= 200, `expected at least 200%, got ${state.zoom}`);
+    ok(state.vScroll > 0 && state.hScroll > 0, 'a zoomed page should scroll in both directions');
+    ok(Math.abs(state.ratio - A4) < 0.01, `aspect ${state.ratio.toFixed(4)} is not A4 at ${state.zoom}`);
+    return `${state.zoom}, ratio ${state.ratio.toFixed(4)}`;
+  });
+
+  await checkAsync('Ctrl and the wheel zooms about the pointer', async () => {
+    const before = await viewer();
+    await js(`(() => {
+      const s = document.querySelector('.preview-stage');
+      const r = s.getBoundingClientRect();
+      s.dispatchEvent(new WheelEvent('wheel', {
+        deltaY: -300, ctrlKey: true, bubbles: true, cancelable: true,
+        clientX: r.left + r.width * 0.3, clientY: r.top + r.height * 0.3,
+      }));
+      return true;
     })()`);
-    eq(measured.modalBody, 0, 'the modal body scrolls as well as the stage');
-    eq(measured.stage, 0, 'the stage scrolls even though the page is scaled to fit');
-    eq(measured.frameScrolling, 'no', 'the frame can produce its own scrollbar');
-    return 'no nested scrolling';
+    await pause(500);
+    const after = await viewer();
+    ok(after.width > before.width, `ctrl+wheel did not zoom: ${before.zoom} -> ${after.zoom}`);
+    ok(Math.abs(after.ratio - A4) < 0.01, 'aspect drifted while wheel-zooming');
+    return `${before.zoom} -> ${after.zoom}`;
   });
 
-  await checkAsync('the scaled sheet keeps true A4 proportions', async () => {
-    const sheet = await js(`(() => {
-      const r = document.querySelector('.preview-sheet')?.getBoundingClientRect();
-      return r ? { w: r.width, h: r.height } : null;
+  await checkAsync('dragging pans the zoomed page', async () => {
+    ok((await viewer()).vScroll > 0, 'fixture should be zoomed in enough to pan');
+    // Read, drag and re-read in one go: a zoom adjustment landing between two
+    // separate reads would otherwise be counted as part of the drag.
+    const moved = await js(`(() => {
+      const s = document.querySelector('.preview-stage');
+      // Start away from the edges so neither axis clamps mid-drag.
+      s.scrollLeft = Math.round((s.scrollWidth - s.clientWidth) / 2);
+      s.scrollTop = Math.round((s.scrollHeight - s.clientHeight) / 2);
+      const from = { left: s.scrollLeft, top: s.scrollTop };
+      s.dispatchEvent(new MouseEvent('mousedown', { button: 0, clientX: 700, clientY: 500, bubbles: true }));
+      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 620, clientY: 420, bubbles: true }));
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+      return { dx: s.scrollLeft - from.left, dy: s.scrollTop - from.top };
     })()`);
-    ok(sheet && sheet.w > 0, 'no sheet rendered');
-    const ratio = sheet.h / sheet.w;
-    const a4 = 297 / 210;
-    ok(Math.abs(ratio - a4) < 0.01, `aspect ratio ${ratio.toFixed(4)}, A4 is ${a4.toFixed(4)}`);
-    ok((await js('document.querySelector(".preview-scale")?.textContent ?? ""')).includes('210'),
-      'the A4 dimensions are not stated');
-    return `${sheet.w.toFixed(0)}x${sheet.h.toFixed(0)} — ratio ${ratio.toFixed(4)}`;
+    eq(moved.dx, 80, 'horizontal pan');
+    eq(moved.dy, 80, 'vertical pan');
+    return 'moved 80px in both axes';
   });
 
-  await checkAsync('the printer picker and system-dialog fallback are both present', async () => {
-    ok(await js('!!document.querySelector("#printer-choice")'), 'no printer picker');
-    const buttons = await js(`[...document.querySelectorAll('.modal-foot .btn')].map(b => b.textContent.trim())`);
-    ok(buttons.some((label) => /system dialog/i.test(label)), 'no system dialog escape hatch');
-    ok(buttons.some((label) => label === 'Print'), 'no print button');
-    ok(buttons.some((label) => label === 'Save PDF'), 'no save pdf button');
-    return buttons.join(', ');
+  await checkAsync('a plain wheel scrolls rather than zooming', async () => {
+    const before = await viewer();
+    await js(`(() => {
+      const s = document.querySelector('.preview-stage');
+      s.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, bubbles: true, cancelable: true }));
+      return true;
+    })()`);
+    await pause(400);
+    eq((await viewer()).zoom, before.zoom, 'a plain wheel must not change the zoom');
   });
 
-  await checkAsync('the preview reports its scale and closes cleanly', async () => {
-    const hint = await js('document.querySelector(".preview-scale")?.textContent ?? ""');
-    ok(/\d+%/.test(hint), `no scale shown: ${hint}`);
+  await checkAsync('the viewer states the true page size and closes cleanly', async () => {
+    const status = await js('document.querySelector(".viewer-status")?.textContent ?? ""');
+    ok(status.includes('210'), `page size not stated: ${status}`);
+    ok(/system dialog/i.test(status), 'no system dialog escape hatch');
+    await toolbarClick('Fit Page');
+    await pause(400);
     await press('Escape');
     await pause(500);
     eq(await js('!!document.querySelector(".modal")'), false, 'the preview did not close');

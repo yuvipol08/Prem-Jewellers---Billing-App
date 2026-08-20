@@ -15,8 +15,21 @@ This project follows [Semantic Versioning](https://semver.org/).
   scrolling the same content. The stage is now the only scroll container, and the sheet is scaled
   to fit in both directions, so a whole A4 page is visible with nothing to scroll.
 
+- **Print could land in OneNote.** Electron dropped the default-printer flag from `PrinterInfo`
+  and Windows does not reliably populate its replacement, so detection returned nothing and
+  selection fell through to the first printer in the list — often OneNote or Microsoft Print to
+  PDF. The Windows default is now read from the registry, virtual printers are never guessed at,
+  and the shop's chosen printer is remembered.
+
 ### Added
 
+- **Interactive preview.** Zoom in and out, Fit Page, Fit Width, click the percentage to reset to
+  100%, Ctrl and the wheel to zoom about the pointer, and drag to move the page. Scrollbars appear
+  only when the zoomed page is larger than the window, and the sheet holds true A4 proportions at
+  every zoom level.
+- A toolbar above the sheet carrying the zoom controls, the printer and the print actions.
+- Virtual printers are marked *(saves to a file)* in the list, sorted below real printers, and
+  warned about when one is selected.
 - Printer selection in the preview, with the system default pre-selected.
 - A clear message when no printer is attached, pointing at Save PDF.
 - The preview states the true page size — *A4 210 × 297 mm · shown at 68%*.

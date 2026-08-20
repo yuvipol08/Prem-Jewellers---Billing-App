@@ -37,6 +37,7 @@ export const DEFAULT_SHOP: ShopSettings = {
   defaultGstRate: 3,
   defaultHsnCode: '7113',
   defaultMakingChargeMode: 'flat',
+  defaultPrinter: '',
   invoiceHeading: BUSINESS.invoiceHeading,
   termsAndConditions: BUSINESS.termsAndConditions,
   declaration: BUSINESS.declaration,

@@ -38,7 +38,7 @@ export function BillingPage({
   registerHandle,
   onSaved,
 }: BillingPageProps) {
-  const { settings } = useSettings();
+  const { settings, save: saveSettings } = useSettings();
   const toast = useToast();
 
   const [invoice, setInvoice] = useState<Invoice>(() => createEmptyInvoice('', settings.shop));
@@ -282,6 +282,15 @@ export function BillingPage({
     [ensureSaved, sendToPrinter],
   );
 
+  /** Keeps the shop's printer choice so the next bill is one click. */
+  const rememberPrinter = useCallback(
+    (deviceName: string) => {
+      if (!deviceName || deviceName === settings.shop.defaultPrinter) return;
+      void saveSettings({ ...settings, shop: { ...settings.shop, defaultPrinter: deviceName } });
+    },
+    [settings, saveSettings],
+  );
+
   const doExportPdf = useCallback(async () => {
     const saved = await ensureSaved();
     if (!saved) return;
@@ -289,8 +298,9 @@ export function BillingPage({
     try {
       const result = await api().documents.saveAsPdf(saved);
       if (result.ok && result.data) {
-        toast.success('PDF saved.');
-        void api().documents.revealFile(result.data.filePath);
+        // Saving is done entirely by Chromium's PDF writer — no printer is
+        // involved and no other application is opened.
+        toast.success(`PDF saved to ${result.data.filePath}`);
       } else if (result.message !== 'Save cancelled.') {
         toast.error(result.message ?? 'The PDF could not be created.');
       }
@@ -680,6 +690,7 @@ export function BillingPage({
           onClose={() => setShowPreview(false)}
           onPrint={(request) => void doPrint(request)}
           onExportPdf={() => void doExportPdf()}
+          onPrinterChange={rememberPrinter}
         />
       ) : null}
     </div>

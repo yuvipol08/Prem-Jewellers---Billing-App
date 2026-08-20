@@ -120,6 +120,8 @@ export interface ShopSettings {
   defaultGstRate: number;
   defaultHsnCode: string;
   defaultMakingChargeMode: MakingChargeMode;
+  /** Printer the shop chose. Remembered so billing is one click. Editable. */
+  defaultPrinter: string;
   /** Heading printed in the red band, e.g. "TAX INVOICE". Locked. */
   invoiceHeading: string;
   termsAndConditions: string;
