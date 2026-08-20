@@ -19,6 +19,28 @@ export interface PdfResult {
   filePath: string;
 }
 
+export interface PrinterChoice {
+  name: string;
+  displayName: string;
+  description: string;
+  isDefault: boolean;
+}
+
+export interface PrintRequest {
+  copyLabel?: string;
+  /** OS printer name. Omit to use the system default. */
+  deviceName?: string;
+  copies?: number;
+  /** Opens the OS print dialog instead of printing straight to the printer. */
+  useSystemDialog?: boolean;
+}
+
+export interface PrintOutcome {
+  printed: boolean;
+  cancelled: boolean;
+  deviceName: string;
+}
+
 export interface EmergencyBackupReport {
   uploadedInvoices: number;
   uploadedCustomers: number;
@@ -60,7 +82,8 @@ export interface BillingApi {
     previewHtml(invoice: Invoice, copyLabel?: string): Promise<string>;
     exportPdf(invoice: Invoice, copyLabel?: string): Promise<OperationResult<PdfResult>>;
     saveAsPdf(invoice: Invoice, copyLabel?: string): Promise<OperationResult<PdfResult>>;
-    print(invoice: Invoice, copyLabel?: string): Promise<OperationResult>;
+    listPrinters(): Promise<PrinterChoice[]>;
+    print(invoice: Invoice, request?: PrintRequest): Promise<OperationResult<PrintOutcome>>;
     openFile(filePath: string): Promise<OperationResult>;
     revealFile(filePath: string): Promise<OperationResult>;
   };
@@ -107,6 +130,7 @@ export const IPC = {
   docsExportPdf: 'docs:export-pdf',
   docsSaveAsPdf: 'docs:save-as-pdf',
   docsPrint: 'docs:print',
+  docsListPrinters: 'docs:list-printers',
   docsOpenFile: 'docs:open-file',
   docsRevealFile: 'docs:reveal-file',
   whatsappShare: 'whatsapp:share',

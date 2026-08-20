@@ -655,11 +655,6 @@ th.num,
   min-height: 0;
 }
 
-.modal-body.flush {
-  padding: 0;
-  background: var(--surface-inset);
-}
-
 .modal-foot {
   padding: 11px 18px;
   border-top: 1px solid var(--border);
@@ -671,22 +666,34 @@ th.num,
 
 /* ============================================================ print preview */
 
+/*
+ * One scrollbar, not two. The modal body must not scroll here — the stage owns
+ * scrolling, and because the sheet is scaled to fit in both directions there is
+ * usually nothing to scroll at all.
+ */
+.modal-body.flush {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .preview-stage {
-  height: min(72vh, 900px);
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: flex-start;
-  padding: 16px;
+  padding: 14px;
   background: var(--surface-inset);
 }
 
 .preview-sheet {
   position: relative;
   flex: 0 0 auto;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.22);
   background: #fff;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16), 0 10px 32px rgba(0, 0, 0, 0.2);
 }
 
 .preview-frame {
@@ -694,12 +701,48 @@ th.num,
   background: #fff;
   transform-origin: top left;
   display: block;
+  /* The sheet is sized to the scaled page, so the frame never scrolls itself. */
+  overflow: hidden;
 }
 
-.preview-hint {
-  margin-right: auto;
+/* Outside the stage: inside it, its height made the sheet overflow and scroll. */
+.preview-scale {
+  flex: 0 0 auto;
+  padding: 6px 14px 8px;
+  text-align: center;
   font-size: var(--text-sm);
   color: var(--ink-400);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-inset);
+  border-top: 1px solid var(--border);
+}
+
+.print-controls {
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  min-width: 0;
+}
+
+.print-controls-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink-400);
+  white-space: nowrap;
+}
+
+.print-controls .select {
+  width: auto;
+  min-width: 190px;
+  max-width: 300px;
+}
+
+@media (max-width: 900px) {
+  .print-controls { width: 100%; margin-bottom: var(--gap-sm); }
+  .modal-foot { flex-wrap: wrap; }
 }
 
 /* ===================================================================== misc */

@@ -40,10 +40,12 @@ import { clearCloudSession, testCloudConnection } from './services/cloud';
 import {
   buildInvoiceHtml,
   exportInvoicePdf,
+  listPrinters,
   openPath,
   printInvoice,
   revealPath,
   saveInvoicePdfAs,
+  type PrintRequest,
 } from './services/documents';
 import { shareInvoiceOnWhatsApp } from './services/whatsapp';
 
@@ -158,10 +160,11 @@ export function registerIpcHandlers(): void {
       return { filePath };
     }),
   );
+  ipcMain.handle(IPC.docsListPrinters, () => listPrinters());
   ipcMain.handle(
     IPC.docsPrint,
-    guarded((_event: unknown, invoice: Invoice, copyLabel?: string) =>
-      printInvoice(invoice, copyLabel),
+    guarded((_event: unknown, invoice: Invoice, request?: PrintRequest) =>
+      printInvoice(invoice, request),
     ),
   );
   ipcMain.handle(

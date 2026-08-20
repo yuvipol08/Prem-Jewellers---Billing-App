@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { computeInvoice, isSameState } from '@shared/calc';
 import { createEmptyInvoice, createEmptyItem, STATE_CODES } from '@shared/defaults';
+import type { PrintRequest } from '@shared/api';
 import type { Customer, Invoice, InvoiceItem, PaymentMode } from '@shared/types';
 import { CustomerPicker } from '../components/CustomerPicker';
 import { ItemsTable } from '../components/ItemsTable';
@@ -249,18 +250,37 @@ export function BillingPage({
     setShowPreview(true);
   }, [validate, toast]);
 
-  const doPrint = useCallback(async () => {
-    const saved = await ensureSaved();
-    if (!saved) return;
-    setBusy(true);
-    try {
-      const result = await api().documents.print(saved);
-      if (!result.ok) toast.error(result.message ?? 'Printing failed.');
-    } finally {
-      setBusy(false);
-      setShowPreview(false);
-    }
-  }, [ensureSaved, toast]);
+  /** Prints an already-saved invoice and reports what actually happened. */
+  const sendToPrinter = useCallback(
+    async (saved: Invoice, request: PrintRequest = {}) => {
+      setBusy(true);
+      try {
+        const result = await api().documents.print(saved, request);
+        if (!result.ok) {
+          toast.error(result.message ?? 'Printing failed.');
+          return false;
+        }
+        if (result.data?.cancelled) return false;
+        toast.success(
+          result.data?.deviceName ? `Sent to ${result.data.deviceName}.` : 'Sent to the printer.',
+        );
+        return true;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [toast],
+  );
+
+  const doPrint = useCallback(
+    async (request: PrintRequest = {}) => {
+      const saved = await ensureSaved();
+      if (!saved) return;
+      const done = await sendToPrinter(saved, request);
+      if (done) setShowPreview(false);
+    },
+    [ensureSaved, sendToPrinter],
+  );
 
   const doExportPdf = useCallback(async () => {
     const saved = await ensureSaved();
@@ -303,14 +323,8 @@ export function BillingPage({
     if (!saved) return;
     // Print the invoice save() just returned rather than going back through
     // ensureSaved, which would re-read state that has not re-rendered yet.
-    setBusy(true);
-    try {
-      const result = await api().documents.print(saved);
-      if (!result.ok) toast.error(result.message ?? 'Printing failed.');
-    } finally {
-      setBusy(false);
-    }
-  }, [save, toast]);
+    await sendToPrinter(saved);
+  }, [save, sendToPrinter]);
 
   // Menu items and global shortcuts drive the same handlers as the buttons.
   useEffect(() => {
@@ -662,8 +676,9 @@ export function BillingPage({
       {showPreview ? (
         <PrintPreview
           invoice={invoice}
+          busy={busy}
           onClose={() => setShowPreview(false)}
-          onPrint={() => void doPrint()}
+          onPrint={(request) => void doPrint(request)}
           onExportPdf={() => void doExportPdf()}
         />
       ) : null}

@@ -160,6 +160,25 @@ prove the data came back byte-identical.
 **Archives are chunked at 600 KB.** Firestore caps a document at 1 MiB; a single-document archive
 failed at roughly 1,565 invoices. Do not remove the chunking.
 
+## Printing
+
+Printing does **not** use Electron's print dialog. `webContents.print({ silent: false })` opens
+Chromium's print-preview UI, but Electron never wires up the `PrintPreviewUI` data source that
+fills the preview pane, so it renders *"This app doesn't support print preview."* There is no
+option that fixes this — the dialog itself is the problem.
+
+The flow instead is:
+
+1. `listPrinters()` wraps `getPrintersAsync()` for the picker in the preview modal. The default
+   flag lives in the platform-specific `options` bag, not on `PrinterInfo`, and the key differs
+   per platform — `isDefaultPrinter()` reads whatever key matches rather than assuming a shape.
+2. `printInvoice(invoice, { deviceName })` prints silently to that printer, from the same HTML the
+   preview and the PDF are built from, with `pageSize: 'A4'` and `marginType: 'none'`.
+3. `useSystemDialog: true` still opens the OS dialog for tray and duplex options. That path shows
+   the unsupported-preview message, which is why it is opt-in.
+
+If you ever reinstate the system dialog as the default, expect the message to come back.
+
 ## Things that will bite you
 
 - **Stale React closures.** Any async handler that reads `invoice` or `dirty` from render state
@@ -167,6 +186,13 @@ failed at roughly 1,565 invoices. Do not remove the chunking.
   reason. This caused a duplicate-billing bug; do not undo it.
 - **WAL and VACUUM ordering.** In `clearLocalData()` the checkpoint after the VACUUM is load
   bearing. Removing it leaves wiped records readable in the `-wal` file.
+- **The preview frame needs `allow-same-origin`.** A bare `sandbox=""` gives the document an
+  opaque origin, and Chromium then drops its inline `<style>` despite the CSP allowing
+  `'unsafe-inline'` — the invoice renders unstyled and the preview looks blank. Scripts stay
+  blocked; do not add `allow-scripts`.
+- **Only the preview stage scrolls.** `.modal-body.flush` is `overflow: hidden` and the sheet is
+  scaled to fit in both directions. Sizing the sheet at full height inside a scrolling modal body
+  produced two nested scrollbars for the same content.
 - **The render window is reused deliberately.** Creating a fresh `BrowserWindow` per PDF makes
   subsequent navigations fail on some platforms, and costs window construction per bill.
 - **Snapshots must never carry credentials.** `createSnapshot()` strips them unconditionally.

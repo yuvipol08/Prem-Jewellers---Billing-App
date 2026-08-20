@@ -3,6 +3,24 @@
 All notable changes to Prem Jewellers Billing.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Windows print dialog showed "This app doesn't support print preview."** Electron does not
+  implement Chromium's print-preview data source, so its dialog can never fill that pane.
+  Printing now uses an in-app printer picker and prints straight to the chosen printer; the OS
+  dialog remains available under *System dialog…* for tray and duplex options.
+- **Two scrollbars in the print preview.** The modal body and the preview stage were both
+  scrolling the same content. The stage is now the only scroll container, and the sheet is scaled
+  to fit in both directions, so a whole A4 page is visible with nothing to scroll.
+
+### Added
+
+- Printer selection in the preview, with the system default pre-selected.
+- A clear message when no printer is attached, pointing at Save PDF.
+- The preview states the true page size — *A4 210 × 297 mm · shown at 68%*.
+
 ## [1.0.0] — 2026-08-19
 
 First release. Offline-first billing for Prem Jewellers, Jalgaon, on Windows and macOS.

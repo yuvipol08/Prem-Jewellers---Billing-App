@@ -103,8 +103,9 @@ export function InvoicesPage({
   const reprint = useCallback(
     (row: InvoiceListRow) =>
       withInvoice(row.id, async (invoice) => {
-        const result = await api().documents.print(invoice, 'Duplicate Copy');
+        const result = await api().documents.print(invoice, { copyLabel: 'Duplicate Copy' });
         if (!result.ok) toast.error(result.message ?? 'Printing failed.');
+        else if (!result.data?.cancelled) toast.success('Sent to the printer.');
       }),
     [withInvoice, toast],
   );
@@ -371,14 +372,20 @@ export function InvoicesPage({
       {preview ? (
         <PrintPreview
           invoice={preview}
+          copyLabel="Duplicate Copy"
           onClose={() => setPreview(null)}
-          onPrint={() => {
+          onPrint={(request) => {
             const current = preview;
-            setPreview(null);
             void api()
-              .documents.print(current, 'Duplicate Copy')
+              .documents.print(current, { ...request, copyLabel: 'Duplicate Copy' })
               .then((result) => {
-                if (!result.ok) toast.error(result.message ?? 'Printing failed.');
+                if (!result.ok) {
+                  toast.error(result.message ?? 'Printing failed.');
+                  return;
+                }
+                if (result.data?.cancelled) return;
+                toast.success('Sent to the printer.');
+                setPreview(null);
               });
           }}
           onExportPdf={() => {

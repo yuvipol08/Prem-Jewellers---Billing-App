@@ -214,8 +214,48 @@ H.run('ui', async () => {
     return `${red.toLocaleString()} branded pixels painted`;
   });
 
+  await checkAsync('the preview has exactly one scroll container, and nothing to scroll', async () => {
+    const measured = await js(`(() => {
+      const el = (s) => document.querySelector(s);
+      const overflow = (n) => (n ? n.scrollHeight - n.clientHeight : null);
+      return {
+        modalBody: overflow(el('.modal-body')),
+        stage: overflow(el('.preview-stage')),
+        // The sheet is sized to the scaled page, so the frame itself must not scroll.
+        frameScrolling: el('iframe.preview-frame')?.getAttribute('scrolling'),
+      };
+    })()`);
+    eq(measured.modalBody, 0, 'the modal body scrolls as well as the stage');
+    eq(measured.stage, 0, 'the stage scrolls even though the page is scaled to fit');
+    eq(measured.frameScrolling, 'no', 'the frame can produce its own scrollbar');
+    return 'no nested scrolling';
+  });
+
+  await checkAsync('the scaled sheet keeps true A4 proportions', async () => {
+    const sheet = await js(`(() => {
+      const r = document.querySelector('.preview-sheet')?.getBoundingClientRect();
+      return r ? { w: r.width, h: r.height } : null;
+    })()`);
+    ok(sheet && sheet.w > 0, 'no sheet rendered');
+    const ratio = sheet.h / sheet.w;
+    const a4 = 297 / 210;
+    ok(Math.abs(ratio - a4) < 0.01, `aspect ratio ${ratio.toFixed(4)}, A4 is ${a4.toFixed(4)}`);
+    ok((await js('document.querySelector(".preview-scale")?.textContent ?? ""')).includes('210'),
+      'the A4 dimensions are not stated');
+    return `${sheet.w.toFixed(0)}x${sheet.h.toFixed(0)} — ratio ${ratio.toFixed(4)}`;
+  });
+
+  await checkAsync('the printer picker and system-dialog fallback are both present', async () => {
+    ok(await js('!!document.querySelector("#printer-choice")'), 'no printer picker');
+    const buttons = await js(`[...document.querySelectorAll('.modal-foot .btn')].map(b => b.textContent.trim())`);
+    ok(buttons.some((label) => /system dialog/i.test(label)), 'no system dialog escape hatch');
+    ok(buttons.some((label) => label === 'Print'), 'no print button');
+    ok(buttons.some((label) => label === 'Save PDF'), 'no save pdf button');
+    return buttons.join(', ');
+  });
+
   await checkAsync('the preview reports its scale and closes cleanly', async () => {
-    const hint = await js('document.querySelector(".preview-hint")?.textContent ?? ""');
+    const hint = await js('document.querySelector(".preview-scale")?.textContent ?? ""');
     ok(/\d+%/.test(hint), `no scale shown: ${hint}`);
     await press('Escape');
     await pause(500);

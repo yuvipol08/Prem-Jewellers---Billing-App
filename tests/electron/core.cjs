@@ -371,6 +371,30 @@ H.run('core', async () => {
     }
   });
 
+  await checkAsync('the printer list is readable without throwing', async () => {
+    const printers = await documents.listPrinters();
+    ok(Array.isArray(printers), 'not an array');
+    for (const printer of printers) {
+      ok(typeof printer.name === 'string', 'printer name');
+      ok(typeof printer.isDefault === 'boolean', 'default flag');
+    }
+    return `${printers.length} printer(s) visible`;
+  });
+
+  await checkAsync('printing with no printer attached explains itself', async () => {
+    const printers = await documents.listPrinters();
+    if (printers.length > 0) return 'skipped — a printer is attached';
+    let message = '';
+    try {
+      await documents.printInvoice(makeInvoice());
+    } catch (error) {
+      message = error.message;
+    }
+    ok(/no printer is available/i.test(message), `unhelpful message: ${message}`);
+    ok(/save pdf/i.test(message), 'the message should offer a way forward');
+    return 'clear message, no crash';
+  });
+
   check('the printed HTML carries every column and escapes hostile input', () => {
     const html = documents.buildInvoiceHtml(makeInvoice({ customerName: '<img src=x onerror=alert(1)>' }));
     for (const heading of ['HSN', 'Particulars', 'Gross Wt', 'Net Wt', 'Rate', 'Making', 'Amount', 'TAX INVOICE']) {

@@ -145,22 +145,116 @@ export async function saveInvoicePdfAs(
   return result.filePath;
 }
 
-/** Sends the invoice to the OS print dialog, rendered from the same HTML as the PDF. */
-export async function printInvoice(invoice: Invoice, copyLabel?: string): Promise<void> {
-  const html = buildInvoiceHtml(invoice, copyLabel);
-  await withRenderWindow(html, async (window) => {
-    await new Promise<void>((resolve, reject) => {
+export interface PrinterChoice {
+  name: string;
+  displayName: string;
+  description: string;
+  isDefault: boolean;
+}
+
+/**
+ * Whether the OS reports this as the default printer.
+ *
+ * Electron moved this out of PrinterInfo and into the platform-specific
+ * `options` bag, where the key differs per platform — Windows reports
+ * "printer-is-default", CUPS reports "is-default". Read whatever is there
+ * rather than assuming a shape.
+ */
+function isDefaultPrinter(options: Record<string, unknown> | undefined): boolean {
+  if (!options) return false;
+  for (const [key, value] of Object.entries(options)) {
+    if (!/default/i.test(key)) continue;
+    if (value === true || value === 'true' || value === 'yes' || value === 1) return true;
+  }
+  return false;
+}
+
+/** Printers the OS is offering, for the in-app picker. */
+export async function listPrinters(): Promise<PrinterChoice[]> {
+  return withRenderWindow('<!doctype html><html><body></body></html>', async (window) => {
+    const printers = await window.webContents.getPrintersAsync();
+    return printers.map((printer) => ({
+      name: printer.name,
+      displayName: printer.displayName || printer.name,
+      description: printer.description ?? '',
+      isDefault: isDefaultPrinter(printer.options as Record<string, unknown> | undefined),
+    }));
+  });
+}
+
+export interface PrintRequest {
+  copyLabel?: string;
+  /** OS printer name. Omit to use the system default. */
+  deviceName?: string;
+  copies?: number;
+  /**
+   * Opens the operating system's print dialog instead of printing straight
+   * away. Electron does not implement Chromium's print-preview data source, so
+   * that dialog shows "This app doesn't support print preview" — which is why
+   * it is not the default path. It stays available for printer-specific options
+   * like trays and duplex.
+   */
+  useSystemDialog?: boolean;
+}
+
+export interface PrintOutcome {
+  printed: boolean;
+  cancelled: boolean;
+  deviceName: string;
+}
+
+/**
+ * Prints the invoice from the same HTML the preview and the PDF are built from.
+ *
+ * The default path is a silent print to a named printer, chosen in the app. That
+ * is deliberate: Electron's own dialog cannot show a preview, so putting an
+ * empty preview pane in front of the shop on every bill looked broken. The app's
+ * A4 preview is the preview, and printing is then one click to the till printer.
+ */
+export async function printInvoice(
+  invoice: Invoice,
+  request: PrintRequest = {},
+): Promise<PrintOutcome> {
+  const html = buildInvoiceHtml(invoice, request.copyLabel);
+  const silent = request.useSystemDialog !== true;
+
+  let deviceName = request.deviceName?.trim() ?? '';
+  if (silent && !deviceName) {
+    const printers = await listPrinters();
+    if (printers.length === 0) {
+      throw new Error(
+        'No printer is available. Connect a printer, or use Save PDF to print from another program.',
+      );
+    }
+    deviceName = (printers.find((printer) => printer.isDefault) ?? printers[0]).name;
+  }
+
+  return withRenderWindow(html, async (window) => {
+    return new Promise<PrintOutcome>((resolve, reject) => {
       window.webContents.print(
         {
-          silent: false,
+          silent,
+          ...(deviceName ? { deviceName } : {}),
+          copies: Math.max(1, Math.min(request.copies ?? 1, 10)),
           printBackground: true,
           pageSize: 'A4',
+          landscape: false,
+          // The template reserves its own margins in millimetres; letting the
+          // driver add more would push the weight columns out of alignment.
           margins: { marginType: 'none' },
         },
         (success, failureReason) => {
-          // Closing the print dialog reports failure with no reason — not an error.
-          if (success || !failureReason || /cancel/i.test(failureReason)) resolve();
-          else reject(new Error(failureReason));
+          if (success) {
+            resolve({ printed: true, cancelled: false, deviceName });
+            return;
+          }
+          // Dismissing the system dialog reports failure with a cancellation
+          // reason — that is a choice, not an error worth showing.
+          if (!failureReason || /cancel/i.test(failureReason)) {
+            resolve({ printed: false, cancelled: true, deviceName });
+            return;
+          }
+          reject(new Error(failureReason));
         },
       );
     });
