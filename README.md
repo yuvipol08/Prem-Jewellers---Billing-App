@@ -77,6 +77,29 @@ Reprints of an existing invoice are banded **Duplicate Copy**.
 
 ---
 
+## Fixed business identity
+
+The shop's name, address, GSTIN, PAN, phone, bank details, invoice heading, terms, declaration
+and signature label live in [`shared/business.ts`](shared/business.ts) and are **not editable
+from Settings**. They print on every invoice, and a GSTIN changed by accident at the counter
+would make every later bill non-compliant.
+
+The values are re-applied on every settings read, so a stale row from an older build, an edited
+database, or a backup restored from another machine can never reach a printed bill. Settings
+shows them read-only with an explanation. To change them, edit that file and rebuild.
+
+Any statutory field still blank raises a banner across the top of the app until it is filled in.
+
+## Typography
+
+Cormorant Garamond for the masthead and brand mark, Manrope for everything else, both
+self-hosted so they work with no network under the app's content security policy.
+
+The printed invoice embeds its faces as base64. That keeps the document self-contained, and it
+means the bill renders identically on Windows and macOS rather than falling back to Segoe UI or
+Helvetica depending on the machine. Money columns use tabular figures throughout, so digits line
+up in every column on screen and on paper.
+
 ## Offline-first
 
 * All data lives in a local SQLite database in the app's user-data folder (the exact path is
@@ -149,7 +172,8 @@ normalised automatically (a leading `0` is dropped, the country code is added).
 | Local database | SQLite via `better-sqlite3` (WAL) |
 | Cloud | Firebase Auth + Firestore over REST |
 | PDF / print | Chromium `printToPDF` from the shared invoice template |
-| Packaging | electron-builder (NSIS installer, DMG) |
+| Typography | Cormorant Garamond + Manrope, self-hosted |
+| Packaging | electron-builder (NSIS installer, portable exe, DMG) |
 
 The renderer runs with `nodeIntegration: false`, `contextIsolation: true` and a locked-down
 CSP. It reaches the database only through the small typed bridge in
@@ -159,10 +183,14 @@ CSP. It reaches the database only through the small typed bridge in
 
 ```
 shared/              types, calculations and the invoice template (used by both sides)
+  business.ts        LOCKED shop identity — edit here, never at runtime
+  fonts.ts           generated: invoice faces inlined as base64
 electron/main/       app lifecycle, SQLite, IPC, PDF, printing, WhatsApp, backup, cloud
 electron/preload/    the context bridge — the only path from UI to Node
 src/                 React UI: pages, components, hooks, styles
-tests/               calculation and template unit tests, plus Electron end-to-end tests
+scripts/             doctor, QA runner, font embedding, document generation
+tests/unit/          calculation, template, numbering and messaging tests
+tests/electron/      integration, backup, security, UI and performance suites
 ```
 
 ---
@@ -188,9 +216,15 @@ shop.
 ## Development
 
 ```bash
-npm install
+npm install          # no compiler toolchain needed — see below
 npm run dev          # Vite + tsc watch + Electron, with hot reload
+npm run doctor       # checks the environment when something misbehaves
 ```
+
+**`npm install` requires nothing but Node 22+.** No Python, no Visual Studio Build Tools.
+`better-sqlite3` ships ABI-stable N-API prebuilds for every platform, so nothing is compiled.
+Never run `electron-builder install-app-deps` on this project — it bypasses that and will demand
+a full C++ toolchain.
 
 ```bash
 npm run typecheck     # both TypeScript projects
@@ -232,3 +266,14 @@ Electron and the installer toolchain on first run, so the machine needs normal i
   sales.
 * **Single instance.** The app refuses to open twice, so two windows can never hand out the
   same invoice number.
+
+---
+
+## Support
+
+Built and maintained by **TridentCrew**.
+
+| | |
+| --- | --- |
+| Mobile | 9096310817 |
+| Email | contact@tridentcrew.com |
