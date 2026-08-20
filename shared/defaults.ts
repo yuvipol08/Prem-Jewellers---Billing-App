@@ -1,3 +1,4 @@
+import { BUSINESS } from './business';
 import type { AppSettings, Invoice, InvoiceItem, ShopSettings } from './types';
 
 /**
@@ -5,38 +6,54 @@ import type { AppSettings, Invoice, InvoiceItem, ShopSettings } from './types';
  * editable from Settings — the printed bill is driven entirely by these values,
  * so the layout can be matched to the existing bill book without code changes.
  */
+/**
+ * Shop settings.
+ *
+ * The identity fields are copied from the locked BUSINESS module and are not
+ * editable at runtime — see shared/business.ts for why. What remains editable
+ * here are genuine operating preferences: numbering, tax defaults, theme and
+ * backup behaviour.
+ */
 export const DEFAULT_SHOP: ShopSettings = {
-  shopName: 'Prem Jewellers',
-  tagline: 'Gold · Silver · Diamond',
-  addressLine1: 'Main Road',
-  addressLine2: '',
-  city: 'Jalgaon',
-  stateName: 'Maharashtra',
-  stateCode: '27',
-  pincode: '425001',
-  phone: '',
-  email: '',
-  gstin: '',
-  pan: '',
-  bankName: '',
-  bankAccount: '',
-  bankIfsc: '',
-  upiId: '',
+  shopName: BUSINESS.shopName,
+  tagline: BUSINESS.tagline,
+  addressLine1: BUSINESS.addressLine1,
+  addressLine2: BUSINESS.addressLine2,
+  city: BUSINESS.city,
+  stateName: BUSINESS.stateName,
+  stateCode: BUSINESS.stateCode,
+  pincode: BUSINESS.pincode,
+  phone: BUSINESS.phonePrimary,
+  email: BUSINESS.email,
+  gstin: BUSINESS.gstin,
+  pan: BUSINESS.pan,
+  bankName: BUSINESS.bankName,
+  bankAccount: BUSINESS.bankAccount,
+  bankIfsc: BUSINESS.bankIfsc,
+  upiId: BUSINESS.upiId,
   invoicePrefix: 'PJ',
   invoiceStartNumber: 1,
   resetNumberYearly: true,
   defaultGstRate: 3,
   defaultHsnCode: '7113',
   defaultMakingChargeMode: 'flat',
-  termsAndConditions:
-    'Goods once sold will not be taken back.\nSubject to Jalgaon jurisdiction.\nRates are subject to market fluctuation.',
-  declaration:
-    'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
-  signatureLabel: 'Authorised Signatory',
+  invoiceHeading: BUSINESS.invoiceHeading,
+  termsAndConditions: BUSINESS.termsAndConditions,
+  declaration: BUSINESS.declaration,
+  signatureLabel: BUSINESS.signatureLabel,
+  footerNote: BUSINESS.footerNote,
   theme: 'light',
   autoBackupOnExit: false,
   localBackupFolder: '',
 };
+
+/** The identity fields that are locked; Settings renders these read-only. */
+export const LOCKED_SHOP_FIELDS = [
+  'shopName', 'tagline', 'addressLine1', 'addressLine2', 'city', 'stateName',
+  'stateCode', 'pincode', 'phone', 'email', 'gstin', 'pan', 'bankName',
+  'bankAccount', 'bankIfsc', 'upiId', 'invoiceHeading', 'termsAndConditions',
+  'declaration', 'signatureLabel', 'footerNote',
+] as const satisfies readonly (keyof ShopSettings)[];
 
 export const DEFAULT_SETTINGS: AppSettings = {
   shop: DEFAULT_SHOP,

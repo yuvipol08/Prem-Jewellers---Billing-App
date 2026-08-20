@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from '../../../shared/defaults';
+import { DEFAULT_SETTINGS, DEFAULT_SHOP, LOCKED_SHOP_FIELDS } from '../../../shared/defaults';
 import type { AppSettings } from '../../../shared/types';
 import { getDb } from './connection';
 
@@ -10,8 +10,17 @@ function mergeSettings(stored: unknown): AppSettings {
   if (!stored || typeof stored !== 'object') return base;
 
   const source = stored as Partial<AppSettings>;
+  const shop = { ...base.shop, ...(source.shop ?? {}) };
+
+  // The business identity is locked. Anything stored for these keys — from an
+  // older build, a restored backup, or an edited database — is overwritten with
+  // the compiled-in values, so a bill can never be printed under wrong details.
+  for (const field of LOCKED_SHOP_FIELDS) {
+    (shop as Record<string, unknown>)[field] = DEFAULT_SHOP[field];
+  }
+
   return {
-    shop: { ...base.shop, ...(source.shop ?? {}) },
+    shop,
     firebase: { ...base.firebase, ...(source.firebase ?? {}) },
     whatsapp: { ...base.whatsapp, ...(source.whatsapp ?? {}) },
   };

@@ -175,6 +175,53 @@ H.run('ui', async () => {
 
   await shot('01-billing-filled');
 
+  // ========================================================= print preview
+  group('print preview');
+
+  await checkAsync('the preview opens and actually paints the invoice', async () => {
+    // A bill needs a customer before it can be previewed — that guard is correct.
+    await type('.customer-search .input', 'Preview Customer');
+    await pause(400);
+    await js(`[...document.querySelectorAll('.btn')].find(b => b.textContent.trim() === 'Preview')?.click()`);
+    await pause(2000);
+
+    ok(await js('!!document.querySelector(".modal")'), 'the preview did not open');
+    const frame = await js(`(() => {
+      const f = document.querySelector('iframe.preview-frame');
+      if (!f) return null;
+      return { sandbox: f.getAttribute('sandbox'), len: (f.getAttribute('srcdoc') || '').length };
+    })()`);
+    ok(frame, 'no preview frame');
+    ok(frame.len > 5000, `srcdoc was only ${frame.len} chars`);
+    // allow-same-origin is required: with a bare sandbox the document gets an
+    // opaque origin, its inline <style> is dropped, and the sheet renders blank.
+    ok((frame.sandbox || '').includes('allow-same-origin'), 'the frame would render unstyled');
+    ok(!(frame.sandbox || '').includes('allow-scripts'), 'the preview must not run scripts');
+
+    // Proof by pixels: a blank preview passes every DOM assertion above.
+    const image = await window.webContents.capturePage();
+    const bitmap = image.toBitmap();
+    let red = 0;
+    for (let i = 0; i < bitmap.length; i += 4) {
+      const b = bitmap[i]; const g = bitmap[i + 1]; const r = bitmap[i + 2];
+      if (r > 110 && r < 200 && g < 80 && b < 80) red += 1;
+    }
+    // Baseline measured against the bug: a blank preview paints 0–30 branded
+    // pixels, a rendered sheet paints thousands. 600 sits safely between, and
+    // holds across window sizes and however much of the identity is filled in.
+    ok(red > 600, `the preview looks blank — only ${red} branded pixels painted`);
+    fs.writeFileSync(path.join(SHOTS, '07-print-preview.png'), image.toPNG());
+    return `${red.toLocaleString()} branded pixels painted`;
+  });
+
+  await checkAsync('the preview reports its scale and closes cleanly', async () => {
+    const hint = await js('document.querySelector(".preview-hint")?.textContent ?? ""');
+    ok(/\d+%/.test(hint), `no scale shown: ${hint}`);
+    await press('Escape');
+    await pause(500);
+    eq(await js('!!document.querySelector(".modal")'), false, 'the preview did not close');
+  });
+
   // ============================================================= shortcuts
   group('keyboard and navigation');
 
@@ -279,7 +326,9 @@ H.run('ui', async () => {
   await checkAsync('settings exposes every section including the emergency control', async () => {
     await press('5', { ctrl: true });
     await pause(700);
-    ok(await js('!!document.querySelector("#shop-name")'), 'shop form missing');
+    ok(await js('!!document.querySelector(".field.locked")'), 'locked identity fields missing');
+    ok((await js('document.body.innerText')).toLowerCase().includes('fixed in the software'),
+      'no explanation of why the details are locked');
     const sections = await js(`[...document.querySelectorAll('.card-head .btn')].map(b => b.textContent.trim())`);
     for (const expected of ['Shop Details', 'Invoice & Printing', 'Offline Backup', 'Cloud Backup', 'WhatsApp', 'Emergency']) {
       ok(sections.includes(expected), `missing settings section: ${expected}`);

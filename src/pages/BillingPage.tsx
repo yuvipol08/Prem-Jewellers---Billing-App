@@ -351,131 +351,131 @@ export function BillingPage({
           </div>
         ) : null}
 
-        <div className="card">
+        <div className="card bill-head">
           <div className="card-body">
-            <div className="invoice-meta">
-              <div className="field">
-                <label htmlFor="invoice-no">Invoice No</label>
-                <input
-                  id="invoice-no"
-                  className="input strong mono"
-                  value={invoice.invoiceNo}
-                  onChange={(event) => patch({ invoiceNo: event.target.value })}
-                />
+            <div className="field span-3">
+              <label htmlFor="invoice-no">Invoice No</label>
+              <input
+                id="invoice-no"
+                className="input strong mono"
+                value={invoice.invoiceNo}
+                onChange={(event) => patch({ invoiceNo: event.target.value })}
+              />
+            </div>
+            <div className="field span-2">
+              <label htmlFor="invoice-date">Date</label>
+              <input
+                id="invoice-date"
+                className="input"
+                type="date"
+                value={invoice.invoiceDate}
+                onChange={(event) => patch({ invoiceDate: event.target.value })}
+              />
+            </div>
+            <div className="field span-4">
+              <label htmlFor="place-of-supply">Place of Supply</label>
+              <select
+                id="place-of-supply"
+                className="select"
+                value={invoice.customerStateCode}
+                onChange={(event) => setStateCode(event.target.value)}
+              >
+                {STATE_CODES.map((state) => (
+                  <option key={state.code} value={state.code}>
+                    {state.code} — {state.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field span-3">
+              <span className="field-label">GST Type</span>
+              <div className="gst-mode">
+                {invoice.intraState ? 'CGST + SGST' : 'IGST (Inter-State)'}
               </div>
-              <div className="field">
-                <label htmlFor="invoice-date">Date</label>
-                <input
-                  id="invoice-date"
-                  className="input"
-                  type="date"
-                  value={invoice.invoiceDate}
-                  onChange={(event) => patch({ invoiceDate: event.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="place-of-supply">Place of Supply</label>
-                <select
-                  id="place-of-supply"
-                  className="select"
-                  value={invoice.customerStateCode}
-                  onChange={(event) => setStateCode(event.target.value)}
-                >
-                  {STATE_CODES.map((state) => (
-                    <option key={state.code} value={state.code}>
-                      {state.code} — {state.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>GST Type</label>
-                <div className="input" style={{ background: 'var(--surface-sunken)' }}>
-                  {invoice.intraState ? 'CGST + SGST (Intra-State)' : 'IGST (Inter-State)'}
-                </div>
-              </div>
+            </div>
+
+            <div className="field span-5">
+              <label htmlFor="cust-name">Customer Name</label>
+              <CustomerPicker
+                inputRef={customerFieldRef}
+                value={invoice.customerName}
+                onChange={(value) => patch({ customerName: value, customerId: null })}
+                onPick={applyCustomer}
+              />
+            </div>
+            <div className="field span-3">
+              <label htmlFor="cust-mobile">Mobile</label>
+              <input
+                id="cust-mobile"
+                className="input mono"
+                value={invoice.customerMobile}
+                inputMode="tel"
+                maxLength={15}
+                onChange={(event) => patch({ customerMobile: event.target.value })}
+              />
+            </div>
+            <div className="field span-4">
+              <label htmlFor="cust-address">Address</label>
+              <input
+                id="cust-address"
+                className="input"
+                value={invoice.customerAddress}
+                onChange={(event) => patch({ customerAddress: event.target.value })}
+              />
+            </div>
+            <div className="field span-3">
+              <label htmlFor="cust-gstin">Customer GSTIN</label>
+              <input
+                id="cust-gstin"
+                className="input mono"
+                maxLength={15}
+                style={{ textTransform: 'uppercase' }}
+                value={invoice.customerGstin}
+                onChange={(event) => patch({ customerGstin: event.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="field span-3">
+              <label htmlFor="cust-pan">Customer PAN</label>
+              <input
+                id="cust-pan"
+                className="input mono"
+                maxLength={10}
+                style={{ textTransform: 'uppercase' }}
+                value={invoice.customerPan}
+                onChange={(event) => patch({ customerPan: event.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="field span-6">
+              <label htmlFor="payment-ref">
+                {invoice.paymentMode === 'Cash' ? 'Note (optional)' :
+                  invoice.paymentMode === 'Cheque' ? 'Cheque No / Bank' : 'Transaction Reference'}
+              </label>
+              <input
+                id="payment-ref"
+                className="input"
+                value={invoice.paymentReference}
+                onChange={(event) => patch({ paymentReference: event.target.value })}
+              />
             </div>
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-head">
-            <h2 className="card-title">Customer</h2>
-            <span className="hint" style={{ marginLeft: 'auto' }}>
-              Search by name, mobile or GSTIN — details fill in automatically
-            </span>
-          </div>
-          <div className="card-body">
-            <div className="customer-grid">
-              <div className="field span-2">
-                <label>Name</label>
-                <CustomerPicker
-                  inputRef={customerFieldRef}
-                  value={invoice.customerName}
-                  onChange={(value) => patch({ customerName: value, customerId: null })}
-                  onPick={applyCustomer}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="cust-mobile">Mobile</label>
-                <input
-                  id="cust-mobile"
-                  className="input mono"
-                  value={invoice.customerMobile}
-                  inputMode="tel"
-                  maxLength={15}
-                  onChange={(event) => patch({ customerMobile: event.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="cust-pan">PAN</label>
-                <input
-                  id="cust-pan"
-                  className="input mono"
-                  value={invoice.customerPan}
-                  maxLength={10}
-                  style={{ textTransform: 'uppercase' }}
-                  onChange={(event) => patch({ customerPan: event.target.value.toUpperCase() })}
-                />
-              </div>
-              <div className="field span-2">
-                <label htmlFor="cust-address">Address</label>
-                <input
-                  id="cust-address"
-                  className="input"
-                  value={invoice.customerAddress}
-                  onChange={(event) => patch({ customerAddress: event.target.value })}
-                />
-              </div>
-              <div className="field span-2">
-                <label htmlFor="cust-gstin">GSTIN</label>
-                <input
-                  id="cust-gstin"
-                  className="input mono"
-                  value={invoice.customerGstin}
-                  maxLength={15}
-                  style={{ textTransform: 'uppercase' }}
-                  onChange={(event) => patch({ customerGstin: event.target.value.toUpperCase() })}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
+        <div className="card items-card">
           <div className="card-head">
             <h2 className="card-title">Items</h2>
-            <span className="hint" style={{ marginLeft: 'auto' }}>
-              Press <kbd>Enter</kbd> to move down · <kbd>Alt</kbd>+<kbd>N</kbd> adds a line
+            <span className="hint push">
+              <kbd>Enter</kbd> moves down · <kbd>Alt</kbd>+<kbd>N</kbd> adds a line
             </span>
           </div>
-          <div className="card-body tight">
-            <ItemsTable
-              items={invoice.items}
-              onChange={patchItem}
-              onRemove={removeRow}
-              onAddRow={addRow}
-            />
+          <div className="card-body">
+            <div className="items-scroll">
+              <ItemsTable
+                items={invoice.items}
+                onChange={patchItem}
+                onRemove={removeRow}
+                onAddRow={addRow}
+              />
+            </div>
             <div className="items-foot">
               <button type="button" className="btn btn-sm" onClick={addRow}>
                 + Add Line
@@ -507,7 +507,7 @@ export function BillingPage({
               <span className="value">{formatCurrency(totals.taxableBeforeDiscount)}</span>
             </div>
 
-            <div className="field" style={{ margin: '8px 0' }}>
+            <div className="discount-row">
               <label htmlFor="discount">Discount (₹)</label>
               <input
                 id="discount"
@@ -515,6 +515,7 @@ export function BillingPage({
                 type="number"
                 min="0"
                 step="0.01"
+                placeholder="0.00"
                 value={invoice.discount === 0 ? '' : invoice.discount}
                 onChange={(event) => patch({ discount: Number(event.target.value) || 0 })}
               />
@@ -582,21 +583,7 @@ export function BillingPage({
               ))}
             </div>
 
-            {invoice.paymentMode !== 'Cash' ? (
-              <div className="field" style={{ marginTop: 11 }}>
-                <label htmlFor="payment-ref">
-                  {invoice.paymentMode === 'Cheque' ? 'Cheque No / Bank' : 'Transaction Reference'}
-                </label>
-                <input
-                  id="payment-ref"
-                  className="input"
-                  value={invoice.paymentReference}
-                  onChange={(event) => patch({ paymentReference: event.target.value })}
-                />
-              </div>
-            ) : null}
-
-            <div className="field" style={{ marginTop: 11 }}>
+            <div className="field" style={{ marginTop: 9 }}>
               <label htmlFor="amount-paid">Amount Received (₹)</label>
               <input
                 id="amount-paid"

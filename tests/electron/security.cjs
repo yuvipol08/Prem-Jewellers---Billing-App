@@ -239,8 +239,73 @@ H.run('security', async () => {
 
   check('settings survive an unknown future key without dropping known ones', () => {
     const settings = settingsDb.getSettings();
-    settingsDb.saveSettings({ ...settings, shop: { ...settings.shop, gstin: '27AAAAA0000A1Z5' }, unknownFuture: true });
-    eq(settingsDb.getSettings().shop.gstin, '27AAAAA0000A1Z5', 'known key preserved');
+    // invoicePrefix is an operating preference, not part of the locked identity.
+    settingsDb.saveSettings({ ...settings, shop: { ...settings.shop, invoicePrefix: 'ZZ' }, unknownFuture: true });
+    eq(settingsDb.getSettings().shop.invoicePrefix, 'ZZ', 'editable key preserved');
+    settingsDb.saveSettings(settings);
+  });
+
+  // ------------------------------------------------------- locked identity
+  group('locked business identity');
+
+  check('the identity cannot be changed through the settings API', () => {
+    const { BUSINESS } = mod('shared/business.js');
+    const settings = settingsDb.getSettings();
+    settingsDb.saveSettings({
+      ...settings,
+      shop: {
+        ...settings.shop,
+        shopName: 'Rogue Jewellers',
+        gstin: '99ZZZZZ9999Z9Z9',
+        pan: 'ZZZZZ9999Z',
+        bankAccount: '000000000',
+        declaration: 'Anything at all',
+        signatureLabel: 'Someone Else',
+      },
+    });
+    const after = settingsDb.getSettings().shop;
+    eq(after.shopName, BUSINESS.shopName, 'shop name');
+    eq(after.gstin, BUSINESS.gstin, 'gstin');
+    eq(after.pan, BUSINESS.pan, 'pan');
+    eq(after.bankAccount, BUSINESS.bankAccount, 'bank account');
+    eq(after.declaration, BUSINESS.declaration, 'declaration');
+    eq(after.signatureLabel, BUSINESS.signatureLabel, 'signature label');
+  });
+
+  check('a tampered database row cannot put wrong details on a bill', () => {
+    // Simulate an edited settings blob or a backup from another shop.
+    const stored = JSON.parse(
+      getDb().prepare(`SELECT value FROM settings WHERE key = 'app_settings'`).get().value,
+    );
+    stored.shop.shopName = 'Injected Shop';
+    stored.shop.gstin = '11FAKE1111F1Z1';
+    getDb()
+      .prepare(`UPDATE settings SET value = ? WHERE key = 'app_settings'`)
+      .run(JSON.stringify(stored));
+
+    const { BUSINESS } = mod('shared/business.js');
+    eq(settingsDb.getSettings().shop.shopName, BUSINESS.shopName, 'shop name overridden');
+    const html = documents.buildInvoiceHtml(makeInvoice());
+    ok(!html.includes('Injected Shop'), 'a tampered shop name reached the printed bill');
+    ok(!html.includes('11FAKE1111F1Z1'), 'a tampered GSTIN reached the printed bill');
+  });
+
+  check('a restored backup cannot reintroduce another shop\'s identity', () => {
+    const { BUSINESS } = mod('shared/business.js');
+    const snapshot = snapshotDb.createSnapshot();
+    snapshot.settings.shop.shopName = 'Other Shop';
+    snapshot.settings.shop.gstin = '22OTHER2222O2Z2';
+    snapshotDb.restoreSnapshot(snapshot, { settings: true });
+    eq(settingsDb.getSettings().shop.shopName, BUSINESS.shopName, 'identity held after restore');
+    eq(settingsDb.getSettings().shop.gstin, BUSINESS.gstin, 'gstin held after restore');
+  });
+
+  check('the developer credit never appears on a customer invoice', () => {
+    const { DEVELOPER } = mod('shared/business.js');
+    const html = documents.buildInvoiceHtml(makeInvoice());
+    ok(!html.includes(DEVELOPER.name), 'developer name is on the invoice');
+    ok(!html.includes(DEVELOPER.mobile), 'developer mobile is on the invoice');
+    ok(!html.includes(DEVELOPER.email), 'developer email is on the invoice');
   });
 
   await checkAsync('a PDF still renders when every text field is hostile', async () => {

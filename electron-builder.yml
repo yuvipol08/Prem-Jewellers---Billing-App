@@ -12,11 +12,19 @@ files:
 asar: true
 asarUnpack:
   - '**/node_modules/better-sqlite3/**'
-# better-sqlite3 ships ABI-stable N-API prebuilds for every target platform, so
-# there is nothing to compile — no Visual Studio Build Tools, no node-gyp, no
-# Electron header download. Forcing a rebuild here would only add a toolchain
-# dependency that can fail on a clean machine.
+# better-sqlite3 ships ABI-stable N-API prebuilds for every target platform
+# (node_modules/better-sqlite3/prebuilds/win32-x64.node and friends), so there is
+# nothing to compile: no Visual Studio Build Tools, no Python, no node-gyp, no
+# Electron header download. All three flags below are set because each closes a
+# different route into a source rebuild, and a rebuild is never wanted here.
+#
+# NEVER run `electron-builder install-app-deps` on this project. That command
+# ignores these settings, calls @electron/rebuild directly, and fails on any
+# machine without Python and a C++ toolchain. It used to be wired to postinstall;
+# it was removed for exactly this reason.
 npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
 win:
   target:
     - target: nsis

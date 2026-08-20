@@ -1,7 +1,8 @@
 # Production Readiness Report
 
 **Application:** Prem Jewellers Billing v1.0.0
-**Report date:** 19 August 2026
+**Report date:** 20 August 2026
+**Prepared by:** TridentCrew
 **Test environment:** Linux x64, Node 22.22.2, Electron 43.4.1, headless (Xvfb)
 **Raw results:** `qa-results/summary.json` and per-suite logs, regenerated with `npm run qa`
 
@@ -261,3 +262,14 @@ Sign-off requires closing U1–U9, and at minimum:
 Re-run `npm run qa` on the Windows machine before sign-off; the whole suite runs there
 unchanged. A production readiness certificate should be issued only once those boxes are
 ticked, and it should name who verified each one.
+
+---
+
+## Support
+
+Built and maintained by **TridentCrew**.
+
+| | |
+| --- | --- |
+| Mobile | 9096310817 |
+| Email | contact@tridentcrew.com |

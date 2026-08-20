@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DEVELOPER, missingBusinessDetails } from '@shared/business';
 import type { Invoice } from '@shared/types';
+import { AboutDialog } from './components/AboutDialog';
 import { ShortcutsHelp } from './components/ShortcutsHelp';
 import { api } from './lib/api';
 import { useOnlineStatus } from './lib/hooks';
@@ -37,6 +39,9 @@ export function App() {
   const [pendingInvoice, setPendingInvoice] = useState<Invoice | null>(null);
   const [openInvoiceId, setOpenInvoiceId] = useState<number | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  // Statutory fields still blank in the locked identity module.
+  const pendingDetails = useMemo(() => missingBusinessDetails(), []);
   const [version, setVersion] = useState('');
   // Bumped whenever data changes, so list screens reload when they come forward.
   const [dataToken, setDataToken] = useState(0);
@@ -187,46 +192,55 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
+      <header className="topbar">
         <div className="brand">
           <span className="brand-mark">PJ</span>
           <div>
             <div className="brand-name">{settings.shop.shopName}</div>
             <div className="brand-sub">
               {settings.shop.city}
-              {settings.shop.gstin ? ` · GSTIN ${settings.shop.gstin}` : ''}
+              {settings.shop.gstin ? ` · ${settings.shop.gstin}` : ''}
             </div>
           </div>
         </div>
 
-        <div className="header-spacer" />
+        <nav className="nav">
+          {TABS.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              className={`nav-tab${tab === entry.id ? ' active' : ''}`}
+              onClick={() => setTab(entry.id)}
+            >
+              {entry.label}
+              <kbd>{entry.hint}</kbd>
+            </button>
+          ))}
+        </nav>
 
-        <div className="header-meta">
+        <div className="topbar-end">
           <span className={`status-dot${online ? '' : ' offline'}`}>
-            {online ? 'Online' : 'Offline — billing continues'}
+            {online ? 'Online' : 'Offline'}
           </span>
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowShortcuts(true)}>
             Shortcuts <kbd>F1</kbd>
           </button>
-          {version ? <span className="muted">v{version}</span> : null}
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowAbout(true)}>
+            About
+          </button>
         </div>
       </header>
 
-      <nav className="app-nav">
-        {TABS.map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            className={`nav-tab${tab === entry.id ? ' active' : ''}`}
-            onClick={() => setTab(entry.id)}
-          >
-            {entry.label}
-            <kbd>{entry.hint}</kbd>
-          </button>
-        ))}
-      </nav>
-
       <main className="app-body">
+        {pendingDetails.length > 0 ? (
+          <div className="setup-banner">
+            <span>
+              Business details still to be filled in before invoices are GST-compliant:{' '}
+              <strong>{pendingDetails.join(', ')}</strong>. These are fixed in the software —
+              contact {DEVELOPER.name} to set them.
+            </span>
+          </div>
+        ) : null}
         {/*
           The billing screen stays mounted so an in-progress bill survives a trip
           to another tab — a half-typed invoice must never be lost to a stray click.
@@ -256,6 +270,7 @@ export function App() {
       </main>
 
       {showShortcuts ? <ShortcutsHelp onClose={() => setShowShortcuts(false)} /> : null}
+      {showAbout ? <AboutDialog version={version} onClose={() => setShowAbout(false)} /> : null}
     </div>
   );
 }

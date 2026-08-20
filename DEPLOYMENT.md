@@ -40,10 +40,9 @@ Open **PowerShell** (not Command Prompt) and run:
 ```powershell
 git clone https://github.com/yuvipol08/Prem-Jewellers---Billing-App.git
 cd Prem-Jewellers---Billing-App
-git checkout claude/prem-jewellers-billing-app-dvynl9
 ```
 
-No Git? Download the branch ZIP from GitHub, extract it, then `cd` into the folder.
+No Git? Download the ZIP from GitHub, extract it, then `cd` into the folder.
 
 Verify your Node version before going further:
 
@@ -505,3 +504,14 @@ Print this and tick it off at the shop.
 - [ ] Support contact and response expectations agreed in writing
 - [ ] Version number and install date recorded
 - [ ] Source code and repository access handed over, if in scope
+
+---
+
+## Support
+
+Built and maintained by **TridentCrew**.
+
+| | |
+| --- | --- |
+| Mobile | 9096310817 |
+| Email | contact@tridentcrew.com |

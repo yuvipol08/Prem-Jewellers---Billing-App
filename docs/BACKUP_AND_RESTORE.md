@@ -2,6 +2,8 @@
 
 Everything about protecting Prem Jewellers' records. Read this before using the Emergency button.
 
+Software by **TridentCrew** — 9096310817 · contact@tridentcrew.com
+
 ## Where the records are
 
 One file on the billing computer:
@@ -136,3 +138,14 @@ the shop settings, then **Restore From File**.
 | Every week | Back Up Now to the cloud |
 | Every month | Test a restore onto a spare machine — a backup you have never restored is not a backup |
 | Before any software update | Save a backup file |
+
+---
+
+## Support
+
+Built and maintained by **TridentCrew**.
+
+| | |
+| --- | --- |
+| Mobile | 9096310817 |
+| Email | contact@tridentcrew.com |

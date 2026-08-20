@@ -13,6 +13,10 @@ export default defineConfig({
     },
   },
   server: {
+    // Bound explicitly to IPv4. On Windows "localhost" can resolve to ::1 while
+    // the waiter probes 127.0.0.1, and `npm run dev` then hangs forever waiting
+    // for a server that is already up.
+    host: '127.0.0.1',
     port: 5273,
     strictPort: true,
   },

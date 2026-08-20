@@ -49,7 +49,7 @@ app.whenReady().then(async () => {
   fs.writeFileSync(htmlPath, html);
 
   const window = new BrowserWindow({
-    show: false, width: 812, height: 1160,
+    show: false, width: 830, height: 1180,
     webPreferences: { javascript: false, sandbox: true, contextIsolation: true },
   });
   await window.loadFile(htmlPath);

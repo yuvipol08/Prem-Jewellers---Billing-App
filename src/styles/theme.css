@@ -3,9 +3,19 @@
  *
  * White paper, deep jeweller's red, a little antique gold. Every surface and
  * border is a token so dark mode is a token swap rather than a second stylesheet.
+ *
+ * Density scales with the viewport: the shop's older 1366x768 laptop gets a
+ * tighter rhythm so a whole bill fits without scrolling, while larger monitors
+ * open up. Components only ever reference the tokens, never the breakpoints.
  */
 
 :root {
+  /* --- brand: filled surfaces keep these exact values in both themes ------ */
+  --brand: #8c1a1a;
+  --brand-deep: #63100f;
+  --brand-hover: #a72525;
+  --on-brand: #ffffff;
+
   --red-900: #6d1414;
   --red-700: #8c1a1a;
   --red-600: #9b1b1b;
@@ -13,53 +23,106 @@
   --red-100: #f7e9e9;
   --red-050: #fdf6f6;
 
-  /* Filled brand surfaces (buttons, the grand-total banner, the logo mark) keep
-     these exact values in both themes — inverting them washes the red out. */
-  --brand: #9b1b1b;
-  --brand-deep: #6d1414;
-  --brand-hover: #b62525;
-  --on-brand: #ffffff;
-
-  --gold-600: #9a7b2f;
+  --gold-600: #8a7433;
   --gold-400: #c8a44a;
-  --gold-100: #f6efdc;
+  --gold-100: #f7f0dd;
 
-  --ink-900: #1a1613;
-  --ink-700: #3b3733;
-  --ink-500: #6b6560;
-  --ink-400: #8d8781;
-  --ink-300: #b6b0aa;
+  --ink-900: #171310;
+  --ink-800: #2c2521;
+  --ink-700: #3f3833;
+  --ink-500: #6a615a;
+  --ink-400: #8d847c;
+  --ink-300: #b4aaa1;
 
   --surface: #ffffff;
   --surface-raised: #ffffff;
-  --surface-sunken: #faf8f6;
+  --surface-sunken: #f8f6f4;
   --surface-header: #ffffff;
-  --border: #e7e1db;
-  --border-strong: #d5cdc5;
+  --surface-inset: #f2efec;
+  --border: #e8e2dc;
+  --border-strong: #d3cabf;
 
-  --success: #1f7a45;
-  --success-bg: #e8f5ee;
-  --warning: #9a6410;
-  --warning-bg: #fdf3e2;
-  --danger: #b3261e;
-  --danger-bg: #fdecea;
+  --success: #1c6b3f;
+  --success-bg: #e7f3ec;
+  --warning: #8a5c0d;
+  --warning-bg: #fdf2e0;
+  --danger: #a81f18;
+  --danger-bg: #fdeceb;
 
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 5px;
+  --radius: 8px;
+  --radius-lg: 12px;
 
-  --shadow-sm: 0 1px 2px rgba(26, 22, 19, 0.06);
-  --shadow: 0 2px 8px rgba(26, 22, 19, 0.08);
-  --shadow-lg: 0 12px 32px rgba(26, 22, 19, 0.16);
+  --shadow-sm: 0 1px 2px rgba(23, 19, 16, 0.05);
+  --shadow: 0 1px 3px rgba(23, 19, 16, 0.07), 0 6px 16px rgba(23, 19, 16, 0.05);
+  --shadow-lg: 0 12px 40px rgba(23, 19, 16, 0.18);
 
-  --font: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  --font-num: "SF Mono", "Cascadia Mono", Consolas, "Roboto Mono", monospace;
+  /* --- type ------------------------------------------------------------- */
+  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Manrope Variable', 'Manrope', 'Segoe UI', -apple-system,
+    BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --num: 'tnum' 1, 'lnum' 1;
 
-  --header-height: 58px;
-  --nav-height: 46px;
+  --text-xs: 10.5px;
+  --text-sm: 11.5px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 26px;
+
+  /* --- density: overridden per breakpoint below -------------------------- */
+  --bar-height: 50px;
+  --gap: 12px;
+  --gap-sm: 8px;
+  --gap-lg: 16px;
+  --pad-card: 14px;
+  --pad-field: 8px 10px;
+  --row-height: 32px;
+  --side-width: 328px;
+  --page-pad: 16px;
+}
+
+/* 1366x768 and other short laptops: buy back vertical space. */
+@media (max-height: 820px) {
+  :root {
+    --bar-height: 46px;
+    --gap: 9px;
+    --gap-sm: 6px;
+    --gap-lg: 12px;
+    --pad-card: 10px;
+    --pad-field: 6px 9px;
+    --row-height: 29px;
+    --page-pad: 11px;
+    --text-2xl: 23px;
+  }
+}
+
+@media (max-width: 1400px) {
+  :root {
+    --side-width: 300px;
+  }
+}
+
+/* Large monitors: let the working area breathe without stretching lines. */
+@media (min-width: 1800px) and (min-height: 900px) {
+  :root {
+    --gap: 14px;
+    --gap-lg: 20px;
+    --pad-card: 18px;
+    --row-height: 36px;
+    --side-width: 372px;
+    --page-pad: 22px;
+    --text-base: 13.5px;
+    --text-md: 14.5px;
+  }
 }
 
 :root[data-theme='dark'] {
+  --brand: #a82424;
+  --brand-deep: #7a1817;
+  --brand-hover: #c23030;
+
   --red-900: #f0b8b8;
   --red-700: #e88b8b;
   --red-600: #dd6a6a;
@@ -71,31 +134,29 @@
   --gold-400: #c8a44a;
   --gold-100: #3a3220;
 
-  --ink-900: #f2ede8;
-  --ink-700: #d9d2cb;
-  --ink-500: #a49d96;
-  --ink-400: #857e78;
-  --ink-300: #625b55;
+  --ink-900: #f4efea;
+  --ink-800: #e4ddd6;
+  --ink-700: #d2cac2;
+  --ink-500: #a49b92;
+  --ink-400: #857c74;
+  --ink-300: #635b54;
 
-  --surface: #191513;
-  --surface-raised: #221d1a;
-  --surface-sunken: #141110;
-  --surface-header: #221d1a;
-  --border: #342d29;
-  --border-strong: #453c37;
+  --surface: #17130f;
+  --surface-raised: #201a16;
+  --surface-sunken: #120f0c;
+  --surface-header: #201a16;
+  --surface-inset: #2a231e;
+  --border: #332b25;
+  --border-strong: #473d35;
 
   --success: #6ed49b;
-  --success-bg: #16301f;
+  --success-bg: #14291d;
   --warning: #e0b25f;
-  --warning-bg: #322512;
+  --warning-bg: #2f2411;
   --danger: #f08a83;
-  --danger-bg: #341a18;
+  --danger-bg: #331917;
 
-  --brand: #a82424;
-  --brand-deep: #7d1818;
-  --brand-hover: #c03030;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
 }

@@ -2,10 +2,14 @@
 
 For whoever maintains the software — not for the counter staff.
 
+Maintained by **TridentCrew** — 9096310817 · contact@tridentcrew.com
+
 ## Architecture in one page
 
 ```
 shared/          pure domain code, imported by BOTH sides
+  business.ts    LOCKED shop identity — edit here, never at runtime
+  fonts.ts       generated: invoice faces inlined as base64
   types.ts       every record shape
   calc.ts        GST, making charges, round-off, amount in words
   numbering.ts   financial-year series, LIKE escaping, sequence parsing
@@ -73,6 +77,22 @@ re-measure with `npm run test:core`, which asserts one page for a nine-line bill
 `shared/calc.ts`. Discount is apportioned pro-rata by line value so each HSN line keeps a correct
 taxable value for the return. `tests/unit/gst-manual.test.mjs` contains nine hand-worked scenarios
 with the arithmetic written out — update those first if the rules change.
+
+### Change the shop's business details
+
+Edit `shared/business.ts` and rebuild. Those values are copied into the default settings and
+re-applied on every settings read, so a stale value in the database — from an older build or a
+restored backup — can never reach a printed invoice. `LOCKED_SHOP_FIELDS` in
+`shared/defaults.ts` lists which keys are enforced this way; Settings renders them read-only.
+
+`missingBusinessDetails()` drives the warning banner. Add a field to `REQUIRED_FOR_COMPLIANCE`
+if it must be present before invoices are considered compliant.
+
+### Change the fonts
+
+The invoice embeds its faces as base64 so the document is self-contained and prints identically
+on every machine. After changing a font dependency, run `npm run fonts` to regenerate
+`shared/fonts.ts`. The UI loads the same families from `@fontsource` through the bundler.
 
 ### Add a setting
 
@@ -154,6 +174,17 @@ failed at roughly 1,565 invoices. Do not remove the chunking.
 
 ## Support checklist
 
-When the shop reports a problem, collect: the app version (top right), what they were doing,
+When the shop reports a problem, collect: the app version (About dialog), what they were doing,
 the exact message, and whether the header shows Online or Offline. Then take a backup file before
-changing anything.
+changing anything. `npm run doctor` reports environment problems in plain language.
+
+---
+
+## Support
+
+Built and maintained by **TridentCrew**.
+
+| | |
+| --- | --- |
+| Mobile | 9096310817 |
+| Email | contact@tridentcrew.com |

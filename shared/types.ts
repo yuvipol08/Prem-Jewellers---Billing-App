@@ -120,9 +120,13 @@ export interface ShopSettings {
   defaultGstRate: number;
   defaultHsnCode: string;
   defaultMakingChargeMode: MakingChargeMode;
+  /** Heading printed in the red band, e.g. "TAX INVOICE". Locked. */
+  invoiceHeading: string;
   termsAndConditions: string;
   declaration: string;
   signatureLabel: string;
+  /** Small line under the sheet, e.g. "This is a computer generated invoice." Locked. */
+  footerNote: string;
   theme: 'light' | 'dark';
   autoBackupOnExit: boolean;
   localBackupFolder: string;

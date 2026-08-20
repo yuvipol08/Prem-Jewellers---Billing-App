@@ -2,6 +2,8 @@
 
 For the person installing the software at Prem Jewellers.
 
+Software by **TridentCrew** — 9096310817 · contact@tridentcrew.com
+
 ## Before you start
 
 | Requirement | Detail |
@@ -41,13 +43,18 @@ folder on whichever machine it runs on, not on the pen drive.
 
 Do this once, with the owner present. Go to **Backup & Settings** (`Ctrl+5`).
 
-### Shop Details — appears on every printed bill
+### Shop Details — fixed in the software
 
-Fill in every field: shop name, tagline, full address, city, state, PIN code, phone, email,
-**GSTIN**, **PAN**, and the bank and UPI details if they want them printed.
+The shop name, address, GSTIN, PAN, phone, bank details, terms, declaration and signature label
+are **compiled into the application** and shown read-only in Settings. This is deliberate: they
+print on every invoice, and a GSTIN changed by accident at the counter would make every later
+bill non-compliant.
 
-> A wrong GSTIN makes every invoice non-compliant. Check it character by character against the
-> registration certificate.
+To change them, edit `shared/business.ts` and rebuild, or contact TridentCrew.
+
+If any statutory field is still blank, the app shows a banner across the top until it is filled
+in — the invoice is not GST-compliant until at least the address, PIN, phone, GSTIN and PAN are
+set.
 
 ### Invoice & Printing
 
@@ -103,6 +110,17 @@ anyway.
 | --- | --- |
 | SmartScreen warning | Expected without a code-signing certificate. **More info → Run anyway.** |
 | Antivirus quarantines the installer | Add an exclusion, or sign the build. |
-| App will not start | Restart the PC. If it still fails, run the executable from a terminal to see the error. Do not reinstall — the data is safe either way, but reinstalling will not fix a startup fault. |
+| App will not start | Restart the PC. If it still fails, run the executable from a terminal to see the error. Do not reinstall — the data is safe either way, but reinstalling will not fix a startup fault. Contact TridentCrew. |
 | Printer not listed | Fix it in Windows first; the app uses the standard Windows print dialog. |
 | Wrong date format | The app requests the `en-IN` locale, giving dd/mm/yyyy. If Windows is set to a different region the picker may still differ; this is cosmetic and does not affect stored dates. |
+
+---
+
+## Support
+
+Built and maintained by **TridentCrew**.
+
+| | |
+| --- | --- |
+| Mobile | 9096310817 |
+| Email | contact@tridentcrew.com |

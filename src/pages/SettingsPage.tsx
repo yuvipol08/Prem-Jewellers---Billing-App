@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { EMERGENCY_CONFIRMATION_PHRASE } from '@shared/api';
-import { STATE_CODES } from '@shared/defaults';
+import { DEVELOPER } from '@shared/business';
 import type { AppSettings, CloudStatus, MakingChargeMode } from '@shared/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
@@ -124,169 +124,63 @@ export function SettingsPage({ onDataChanged }: { onDataChanged(): void }) {
 
           <div className="card-body">
             {section === 'shop' ? (
-              <div className="field-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-                <div className="field" style={{ gridColumn: 'span 2' }}>
-                  <label htmlFor="shop-name">Shop Name</label>
-                  <input
-                    id="shop-name"
-                    className="input strong"
-                    value={draft.shop.shopName}
-                    onChange={(event) => patchShop({ shopName: event.target.value })}
-                  />
+              <div>
+                <div className="note-locked">
+                  <strong>These details are fixed in the software.</strong> They print on every
+                  invoice, so they are not editable here — a GSTIN or shop name changed by accident
+                  would make every later bill non-compliant. Contact {DEVELOPER.name} on{' '}
+                  {DEVELOPER.mobile} to change them.
                 </div>
-                <div className="field">
-                  <label htmlFor="shop-tagline">Tagline</label>
-                  <input
-                    id="shop-tagline"
-                    className="input"
-                    value={draft.shop.tagline}
-                    onChange={(event) => patchShop({ tagline: event.target.value })}
-                  />
+
+                <div className="field-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                  {([
+                    ['Shop Name', draft.shop.shopName, 'span 2'],
+                    ['Tagline', draft.shop.tagline, ''],
+                    ['Address Line 1', draft.shop.addressLine1, ''],
+                    ['Address Line 2', draft.shop.addressLine2, ''],
+                    ['City', draft.shop.city, ''],
+                    ['State', `${draft.shop.stateName} (${draft.shop.stateCode})`, ''],
+                    ['PIN Code', draft.shop.pincode, ''],
+                    ['Phone', draft.shop.phone, ''],
+                    ['Email', draft.shop.email, ''],
+                    ['GSTIN', draft.shop.gstin, ''],
+                    ['PAN', draft.shop.pan, ''],
+                    ['Bank Name', draft.shop.bankName, ''],
+                    ['Account No', draft.shop.bankAccount, ''],
+                    ['IFSC', draft.shop.bankIfsc, ''],
+                    ['UPI ID', draft.shop.upiId, ''],
+                  ] as [string, string, string][]).map(([label, value, span]) => (
+                    <div className="field locked" key={label} style={span ? { gridColumn: span } : undefined}>
+                      <label>
+                        {label} <span className="lock-tag">· Fixed</span>
+                      </label>
+                      <input className="input" readOnly value={value} placeholder="Not yet set" />
+                    </div>
+                  ))}
+
+                  <div className="field" style={{ gridColumn: 'span 3' }}>
+                    <label htmlFor="theme">Appearance</label>
+                    <select
+                      id="theme"
+                      className="select"
+                      value={draft.shop.theme}
+                      onChange={(event) =>
+                        patchShop({ theme: event.target.value as 'light' | 'dark' })
+                      }
+                    >
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
+                    <span className="hint">The only shop-level preference that is adjustable here.</span>
+                  </div>
                 </div>
-                <div className="field">
-                  <label htmlFor="addr1">Address Line 1</label>
-                  <input
-                    id="addr1"
-                    className="input"
-                    value={draft.shop.addressLine1}
-                    onChange={(event) => patchShop({ addressLine1: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="addr2">Address Line 2</label>
-                  <input
-                    id="addr2"
-                    className="input"
-                    value={draft.shop.addressLine2}
-                    onChange={(event) => patchShop({ addressLine2: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="city">City</label>
-                  <input
-                    id="city"
-                    className="input"
-                    value={draft.shop.city}
-                    onChange={(event) => patchShop({ city: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="state">State</label>
-                  <select
-                    id="state"
-                    className="select"
-                    value={draft.shop.stateCode}
-                    onChange={(event) => {
-                      const found = STATE_CODES.find((s) => s.code === event.target.value);
-                      patchShop({
-                        stateCode: event.target.value,
-                        stateName: found?.name ?? draft.shop.stateName,
-                      });
-                    }}
-                  >
-                    {STATE_CODES.map((state) => (
-                      <option key={state.code} value={state.code}>
-                        {state.code} — {state.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor="pincode">PIN Code</label>
-                  <input
-                    id="pincode"
-                    className="input mono"
-                    value={draft.shop.pincode}
-                    onChange={(event) => patchShop({ pincode: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="phone">Phone</label>
-                  <input
-                    id="phone"
-                    className="input mono"
-                    value={draft.shop.phone}
-                    onChange={(event) => patchShop({ phone: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="email">Email</label>
-                  <input
-                    id="email"
-                    className="input"
-                    value={draft.shop.email}
-                    onChange={(event) => patchShop({ email: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="gstin">GSTIN</label>
-                  <input
-                    id="gstin"
-                    className="input mono"
-                    maxLength={15}
-                    value={draft.shop.gstin}
-                    onChange={(event) => patchShop({ gstin: event.target.value.toUpperCase() })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="pan">PAN</label>
-                  <input
-                    id="pan"
-                    className="input mono"
-                    maxLength={10}
-                    value={draft.shop.pan}
-                    onChange={(event) => patchShop({ pan: event.target.value.toUpperCase() })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="bank">Bank Name</label>
-                  <input
-                    id="bank"
-                    className="input"
-                    value={draft.shop.bankName}
-                    onChange={(event) => patchShop({ bankName: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="account">Account No</label>
-                  <input
-                    id="account"
-                    className="input mono"
-                    value={draft.shop.bankAccount}
-                    onChange={(event) => patchShop({ bankAccount: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="ifsc">IFSC</label>
-                  <input
-                    id="ifsc"
-                    className="input mono"
-                    value={draft.shop.bankIfsc}
-                    onChange={(event) => patchShop({ bankIfsc: event.target.value.toUpperCase() })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="upi">UPI ID</label>
-                  <input
-                    id="upi"
-                    className="input mono"
-                    value={draft.shop.upiId}
-                    onChange={(event) => patchShop({ upiId: event.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="theme">Appearance</label>
-                  <select
-                    id="theme"
-                    className="select"
-                    value={draft.shop.theme}
-                    onChange={(event) =>
-                      patchShop({ theme: event.target.value as 'light' | 'dark' })
-                    }
-                  >
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                  </select>
+
+                <div className="credit" style={{ marginTop: 18, borderTop: '1px solid var(--border)' }}>
+                  <span>
+                    <strong>{DEVELOPER.credit}</strong>
+                  </span>
+                  <span>Mobile: {DEVELOPER.mobile}</span>
+                  <span>Email: {DEVELOPER.email}</span>
                 </div>
               </div>
             ) : null}
@@ -378,32 +272,23 @@ export function SettingsPage({ onDataChanged }: { onDataChanged(): void }) {
                     <option value="percent">Percent of metal value (%)</option>
                   </select>
                 </div>
-                <div className="field" style={{ gridColumn: 'span 3' }}>
-                  <label htmlFor="terms">Terms &amp; Conditions (printed on the bill)</label>
-                  <textarea
-                    id="terms"
-                    className="textarea"
-                    value={draft.shop.termsAndConditions}
-                    onChange={(event) => patchShop({ termsAndConditions: event.target.value })}
-                  />
+                <div className="field locked" style={{ gridColumn: 'span 3' }}>
+                  <label>
+                    Terms &amp; Conditions (printed on the bill) <span className="lock-tag">· Fixed</span>
+                  </label>
+                  <textarea className="textarea" readOnly value={draft.shop.termsAndConditions} />
                 </div>
-                <div className="field" style={{ gridColumn: 'span 2' }}>
-                  <label htmlFor="declaration">Declaration</label>
-                  <textarea
-                    id="declaration"
-                    className="textarea"
-                    value={draft.shop.declaration}
-                    onChange={(event) => patchShop({ declaration: event.target.value })}
-                  />
+                <div className="field locked" style={{ gridColumn: 'span 2' }}>
+                  <label>
+                    Declaration <span className="lock-tag">· Fixed</span>
+                  </label>
+                  <textarea className="textarea" readOnly value={draft.shop.declaration} />
                 </div>
-                <div className="field">
-                  <label htmlFor="sign-label">Signature Label</label>
-                  <input
-                    id="sign-label"
-                    className="input"
-                    value={draft.shop.signatureLabel}
-                    onChange={(event) => patchShop({ signatureLabel: event.target.value })}
-                  />
+                <div className="field locked">
+                  <label>
+                    Signature Label <span className="lock-tag">· Fixed</span>
+                  </label>
+                  <input className="input" readOnly value={draft.shop.signatureLabel} />
                 </div>
               </div>
             ) : null}

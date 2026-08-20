@@ -8,6 +8,7 @@
  */
 
 import { formatCurrency, formatWeight, round2 } from './calc';
+import { INVOICE_FONT_FACES, INVOICE_SANS_STACK, INVOICE_SERIF_STACK } from './fonts';
 import type { ComputedInvoice, ShopSettings } from './types';
 
 export function escapeHtml(value: unknown): string {
@@ -41,14 +42,17 @@ export interface InvoiceRenderOptions {
 }
 
 const PRINT_CSS = `
+  ${INVOICE_FONT_FACES}
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
     padding: 0;
     background: #ffffff;
     color: #1a1a1a;
-    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    font-size: 10.5pt;
+    font-family: ${INVOICE_SANS_STACK};
+    font-size: 10.3pt;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -79,18 +83,20 @@ const PRINT_CSS = `
     position: relative;
   }
   .shop-name {
-    font-size: 20pt;
-    font-weight: 700;
-    letter-spacing: 0.6pt;
+    font-family: ${INVOICE_SERIF_STACK};
+    font-size: 27pt;
+    font-weight: 600;
+    letter-spacing: 0.3pt;
     color: #9b1b1b;
-    line-height: 1.1;
+    line-height: 1.02;
   }
   .tagline {
-    font-size: 9pt;
-    letter-spacing: 2.4pt;
+    font-size: 8pt;
+    font-weight: 500;
+    letter-spacing: 3.4pt;
     text-transform: uppercase;
-    color: #6b5a2e;
-    margin-top: 1mm;
+    color: #8a7433;
+    margin-top: 1.2mm;
   }
   .shop-address { font-size: 9.5pt; margin-top: 1.5mm; line-height: 1.4; }
   .shop-ids { font-size: 9.5pt; margin-top: 1.2mm; font-weight: 600; }
@@ -112,10 +118,10 @@ const PRINT_CSS = `
     background: #9b1b1b;
     color: #ffffff;
     text-align: center;
-    font-size: 11pt;
-    font-weight: 700;
-    letter-spacing: 3pt;
-    padding: 1.3mm 0;
+    font-size: 10pt;
+    font-weight: 600;
+    letter-spacing: 4.5pt;
+    padding: 1.4mm 0;
   }
   .parties { display: flex; border-bottom: 1pt solid #9b1b1b; }
   .party {
@@ -145,10 +151,10 @@ const PRINT_CSS = `
     background: #f6ecec;
     border-bottom: 1pt solid #9b1b1b;
     border-right: 0.6pt solid #d8bcbc;
-    padding: 1.4mm 1.5mm;
-    font-size: 8.6pt;
+    padding: 1.5mm 1.5mm;
+    font-size: 7.8pt;
     font-weight: 700;
-    letter-spacing: 0.3pt;
+    letter-spacing: 0.7pt;
     text-transform: uppercase;
     color: #6d1414;
   }
@@ -163,9 +169,12 @@ const PRINT_CSS = `
   .col-sr { width: 9mm; text-align: center; }
   .col-hsn { width: 17mm; text-align: center; }
   .col-particulars { text-align: left; }
-  .col-num { width: 20mm; text-align: right; }
-  .col-amount { width: 25mm; text-align: right; font-weight: 600; }
-  .item-name { font-weight: 600; }
+  .col-num { width: 20mm; text-align: right; font-variant-numeric: tabular-nums; }
+  .col-amount {
+    width: 25mm; text-align: right; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .item-name { font-weight: 600; letter-spacing: -0.05pt; }
   .item-note { font-size: 8.4pt; color: #6b6b6b; }
   tr.filler td { height: 6mm; }
   tfoot.item-total td {
@@ -191,14 +200,14 @@ const PRINT_CSS = `
     color: #9b1b1b;
     font-weight: 700;
   }
-  .words-value { font-weight: 600; font-size: 9.6pt; }
+  .words-value { font-weight: 600; font-size: 9.4pt; line-height: 1.4; }
   .bank-block { margin-top: 1.5mm; font-size: 8.6pt; color: #3d3d3d; line-height: 1.4; }
   .bank-block b { color: #1a1a1a; }
   .terms { margin-top: 1.5mm; font-size: 8pt; color: #5a5a5a; line-height: 1.4; }
   .sum-row { display: flex; justify-content: space-between; padding: 0.8mm 0; }
   .sum-row.divider { border-top: 0.6pt solid #dcc9c9; margin-top: 1mm; padding-top: 1.6mm; }
   .sum-label { color: #4a4a4a; }
-  .sum-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .sum-value { font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.1pt; }
   .grand {
     display: flex;
     justify-content: space-between;
@@ -207,8 +216,10 @@ const PRINT_CSS = `
     color: #ffffff;
     padding: 2mm 3mm;
     border-radius: 1mm;
-    font-size: 12pt;
+    font-size: 12.5pt;
     font-weight: 700;
+    letter-spacing: 0.2pt;
+    font-variant-numeric: tabular-nums;
   }
   .pay-line {
     margin-top: 2mm;
@@ -347,7 +358,7 @@ export function renderInvoiceHtml(
       </div>
     </div>
 
-    <div class="title-bar">TAX INVOICE</div>
+    <div class="title-bar">${escapeHtml(shop.invoiceHeading ?? 'TAX INVOICE')}</div>
 
     <div class="parties">
       <div class="party left">
@@ -432,7 +443,7 @@ export function renderInvoiceHtml(
       </div>
     </div>
   </div>
-  <div class="foot-note">This is a computer generated invoice.</div>
+  <div class="foot-note">${escapeHtml(shop.footerNote ?? '')}</div>
 </div>
 </body>
 </html>`;
